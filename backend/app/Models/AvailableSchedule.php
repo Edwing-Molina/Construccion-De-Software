@@ -102,7 +102,7 @@ class AvailableSchedule extends Model
         }
 
         if (isset($filters['specialty_id'])) {
-            $query->whereHas('doctor.specialtys', function ($q) use ($filters) {
+            $query->whereHas('doctor.specialties', function ($q) use ($filters) {
                 $q->where('id', $filters['specialty_id']);
             });
         }

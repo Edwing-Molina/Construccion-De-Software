@@ -20,13 +20,13 @@ final class ProfileService
             $this->updatePatientInfoIfExists($user, $validatedData);
             $this->updateDoctorInfoIfExists($user, $validatedData);
 
-            return $user->fresh()->load('patient', 'doctor.specialtys', 'doctor.clinics');
+            return $user->fresh()->load('patient', 'doctor.specialties', 'doctor.clinics');
         });
     }
 
     public function getUserById(int $userId): User
     {
-        return User::with(['patient', 'doctor.specialtys', 'doctor.clinics'])
+        return User::with(['patient', 'doctor.specialties', 'doctor.clinics'])
             ->findOrFail($userId);
     }
 
@@ -86,7 +86,7 @@ final class ProfileService
             );
         }
 
-        $doctor->specialtys()->sync($specialtyIds);
+        $doctor->specialties()->sync($specialtyIds);
     }
 
     private function syncDoctorClinicsWithOffices($doctor, array $clinicsData): void

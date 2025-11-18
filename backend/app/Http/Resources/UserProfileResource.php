@@ -86,11 +86,11 @@ final class UserProfileResource extends JsonResource
 
     private function getDoctorSpecialties(): array
     {
-        if (!$this->doctor->relationLoaded('specialtys')) {
+        if (!$this->doctor->relationLoaded('specialties')) {
             return [];
         }
 
-        return $this->doctor->specialtys->map(fn($specialty) => [
+        return $this->doctor->specialties->map(fn($specialty) => [
             'id' => $specialty->id,
             'name' => $specialty->name,
         ])->toArray();

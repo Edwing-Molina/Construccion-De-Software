@@ -64,7 +64,7 @@ class Appointment extends Model
     {
         if ($specialtyId) {
             $query->whereHas(
-                'availableSchedule.doctor.specialtys',
+                'availableSchedule.doctor.specialties',
                 function ($q) use ($specialtyId) {
                     $q->where('id', $specialtyId);
                 }
