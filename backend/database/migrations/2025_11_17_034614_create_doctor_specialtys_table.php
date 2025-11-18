@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('doctor_specialtys', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::create('doctor_specialty', function (Blueprint $table) {
+            $table->foreignId('doctor_id')->constrained('doctors');
+            $table->foreignId('specialty_id')->constrained('specialtys');
+            $table->primary(['doctor_id', 'specialty_id']);
         });
     }
 
