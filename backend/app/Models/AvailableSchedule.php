@@ -47,7 +47,7 @@ class AvailableSchedule extends Model
             $currentDate = $startDate->copy();
 
             while ($currentDate <= $endDate) {
-                $currentDay = $currentDate->format('l'); 
+                $currentDay = $currentDate->format('l'); // Ej: 'Monday'
 
                 // Obtener valor string si day_of_week es enum
                 $patternDay = $pattern->day_of_week instanceof \BackedEnum 
@@ -128,4 +128,3 @@ class AvailableSchedule extends Model
         return $query->orderBy('date')->orderBy('start_time')->get();
     }
 }
-
