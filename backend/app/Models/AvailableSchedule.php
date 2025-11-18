@@ -13,11 +13,11 @@ class AvailableSchedule extends Model
     use SoftDeletes;
 
     protected $fillable = [
-    'doctor_id', 
-    'clinic_id', 
-    'date', 
-    'start_time', 
-    'end_time', 
+    'doctor_id',
+    'clinic_id',
+    'date',
+    'start_time',
+    'end_time',
     'available'];
 
     public function doctor()
@@ -50,8 +50,8 @@ class AvailableSchedule extends Model
                 $currentDay = $currentDate->format('l'); // Ej: 'Monday'
 
                 // Obtener valor string si day_of_week es enum
-                $patternDay = $pattern->day_of_week instanceof \BackedEnum 
-                    ? $pattern->day_of_week->value 
+                $patternDay = $pattern->day_of_week instanceof \BackedEnum
+                    ? $pattern->day_of_week->value
                     : $pattern->day_of_week;
 
                 // Validar rango efectivo del patrón
@@ -102,7 +102,7 @@ class AvailableSchedule extends Model
         }
 
         if (isset($filters['specialty_id'])) {
-            $query->whereHas('doctor.specialtys', function ($q) use ($filters) {
+            $query->whereHas('doctor.specialties', function ($q) use ($filters) {
                 $q->where('id', $filters['specialty_id']);
             });
         }

@@ -21,7 +21,7 @@ class Doctor extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function specialtys()
+    public function specialties()
     {
         return $this->belongsToMany(Specialty::class, 'doctor_specialty');
     }
@@ -79,7 +79,7 @@ class Doctor extends Model
 
     public static function filter($filters, $perPage = 10)
     {
-        $query = self::with(['user', 'specialtys', 'clinics']);
+        $query = self::with(['user', 'specialties', 'clinics']);
 
         if (isset($filters['id']) && is_numeric($filters['id'])) {
             $query->where('id', '=', $filters['id']);
@@ -98,7 +98,7 @@ class Doctor extends Model
 
         if (isset($filters['specialty_id'])) {
             $query->whereHas(
-                'specialtys',
+                'specialties',
                 function ($q) use ($filters) {
                     $q->where('id', $filters['specialty_id']);
                 }
