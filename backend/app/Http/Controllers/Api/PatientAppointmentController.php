@@ -1,95 +1,145 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Appointment\BookAppointmentRequest;
-use App\Http\Requests\Appointment\FilterPatientAppointmentsRequest;
-use App\Http\Resources\AppointmentResource;
-use App\Services\PatientAppointmentManagementService;
-use Illuminate\Http\JsonResponse;
+use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use App\Enums\AppointmentStatus;
+use Carbon\Carbon;
 
-final class PatientAppointmentController extends Controller
+class PatientAppointmentController extends Controller
 {
-    private const DEFAULT_APPOINTMENTS_PER_PAGE = 10;
-    private const MINIMUM_APPOINTMENTS_PER_PAGE = 1;
-    private const MAXIMUM_APPOINTMENTS_PER_PAGE = 100;
-
-    public function __construct(
-        private readonly PatientAppointmentManagementService $appointmentManagementService
-    ) {}
-
-    public function listPatientAppointments(FilterPatientAppointmentsRequest $request): JsonResponse
+    /**
+     * Mostrar citas del paciente autenticado con filtros.
+     */
+    public function index(Request $request)
     {
-        $authenticatedUser = $request->user();
-        
-        $paginatedPatientAppointments = $this->appointmentManagementService->retrieveAppointmentsForPatient(
-            authenticatedUser: $authenticatedUser,
-            filterCriteria: $request->getValidatedFilters(),
-            itemsPerPage: $this->calculateItemsPerPage($request)
-        );
+        $patient = $request->user();
 
-        return $this->buildSuccessResponse(
-            successMessage: 'Citas del paciente obtenidas correctamente.',
-            responseData: AppointmentResource::collection($paginatedPatientAppointments)
-        );
-    }
+        $filters = [
+            'status'        => $request->input('status'),
+            'doctor_id'     => $request->input('doctor_id'),
+            'specialty_id'  => $request->input('specialty_id'),
+            'from_date'     => $request->input('from_date'),
+            'to_date'       => $request->input('to_date'),
+        ];
 
-    public function bookNewAppointment(BookAppointmentRequest $request): JsonResponse
-    {
-        $authenticatedUser = $request->user();
+        $perPage = $request->input('per_page', 10);
 
-        $newlyCreatedAppointment = $this->appointmentManagementService->bookAppointmentForPatient(
-            authenticatedUser: $authenticatedUser,
-            selectedScheduleId: $request->validated('available_schedule_id')
-        );
+        $appointments = Appointment::where('patient_id', $patient->id)
+            ->filterByStatus($filters['status'])
+            ->filterByDoctor($filters['doctor_id'])
+            ->filterBySpecialty($filters['specialty_id'])
+            ->filterByDateRange($filters['from_date'], $filters['to_date'])
+            ->with(['availableSchedule.doctor', 'patient'])
+            ->paginate($perPage);
 
-        return $this->buildSuccessResponse(
-            successMessage: 'Cita reservada exitosamente.',
-            responseData: new AppointmentResource($newlyCreatedAppointment),
-            httpStatusCode: 201
-        );
-    }
-
-    public function cancelExistingAppointment(Request $request, int $appointmentIdentifier): JsonResponse
-    {
-        $authenticatedUser = $request->user();
-
-        $cancelledPatientAppointment = $this->appointmentManagementService->cancelPatientAppointment(
-            authenticatedUser: $authenticatedUser,
-            appointmentIdentifier: $appointmentIdentifier
-        );
-
-        return $this->buildSuccessResponse(
-            successMessage: 'Cita cancelada correctamente.',
-            responseData: new AppointmentResource($cancelledPatientAppointment)
-        );
-    }
-
-    private function calculateItemsPerPage(Request $request): int
-    {
-        $requestedItemsPerPage = $request->input(
-            'per_page', 
-            self::DEFAULT_APPOINTMENTS_PER_PAGE
-        );
-        
-        return min(
-            max($requestedItemsPerPage, self::MINIMUM_APPOINTMENTS_PER_PAGE),
-            self::MAXIMUM_APPOINTMENTS_PER_PAGE
-        );
-    }
-
-    private function buildSuccessResponse(
-        string $successMessage, 
-        $responseData, 
-        int $httpStatusCode = 200
-    ): JsonResponse {
         return response()->json([
-            'message' => $successMessage,
-            'data' => $responseData,
-        ], $httpStatusCode);
+            'message' => 'Citas obtenidas correctamente',
+            'data' => $appointments,
+        ]);
+    }
+
+    /**
+     * Crear una nueva cita para el paciente autenticado.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'available_schedule_id' => 'required|exists:available_schedules,id',
+            'appointment_date'      => 'required|date',
+        ]);
+
+        $patient = $request->user();
+
+        $appointment = Appointment::create([
+            'patient_id'             => $patient->id,
+            'doctor_id'              => null, // se obtiene mediante availableSchedule
+            'available_schedule_id'  => $validated['available_schedule_id'],
+            'appointment_date'       => $validated['appointment_date'],
+            'status'                 => AppointmentStatus::Pendiente->value,
+        ]);
+
+        return response()->json([
+            'message' => 'Cita agendada correctamente',
+            'data' => $appointment,
+        ], 201);
+    }
+
+    /**
+     * Obtener los detalles de una cita específica del paciente.
+     */
+    public function show($id, Request $request)
+    {
+        $patient = $request->user();
+
+        $appointment = Appointment::where('patient_id', $patient->id)
+            ->with(['availableSchedule.doctor', 'patient'])
+            ->findOrFail($id);
+
+        return response()->json([
+            'message' => 'Cita obtenida correctamente',
+            'data' => $appointment,
+        ]);
+    }
+
+    /**
+     * Cancelar una cita con anticipación.
+     */
+    public function cancel($id, Request $request)
+    {
+        $patient = $request->user();
+
+        $appointment = Appointment::where('patient_id', $patient->id)->findOrFail($id);
+
+        // Validar que la cita esté todavía pendiente
+        if ($appointment->status !== AppointmentStatus::Pendiente->value) {
+            return response()->json([
+                'message' => 'Solo se pueden cancelar citas pendientes.',
+            ], 422);
+        }
+
+        // Validar que la cancelación sea con anticipación (mínimo 2 horas antes)
+        $appointmentDate = Carbon::parse($appointment->appointment_date);
+        $now = Carbon::now();
+
+        if ($appointmentDate->diffInHours($now, false) >= -2) {
+            return response()->json([
+                'message' => 'Las citas solo pueden cancelarse con al menos 2 horas de anticipación.',
+            ], 422);
+        }
+
+        // Marcar como cancelada
+        $appointment->update([
+            'status' => AppointmentStatus::Cancelada->value,
+        ]);
+
+        return response()->json([
+            'message' => 'Cita cancelada correctamente.',
+            'data' => $appointment,
+        ]);
+    }
+
+    /**
+     * Eliminar una cita (solo si está cancelada o no asistió).
+     */
+    public function destroy($id, Request $request)
+    {
+        $patient = $request->user();
+
+        $appointment = Appointment::where('patient_id', $patient->id)->findOrFail($id);
+
+        if ($appointment->status === AppointmentStatus::Pendiente->value) {
+            return response()->json([
+                'message' => 'No puedes eliminar una cita pendiente. Primero cancélala.',
+            ], 422);
+        }
+
+        $appointment->delete();
+
+        return response()->json([
+            'message' => 'Cita eliminada correctamente.',
+        ]);
     }
 }

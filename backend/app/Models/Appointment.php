@@ -1,19 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use App\Enums\AppointmentStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 
-final class Appointment extends Model
+class Appointment extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'patient_id',
         'available_schedule_id',
@@ -21,106 +15,75 @@ final class Appointment extends Model
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'status' => AppointmentStatus::class,
     ];
 
 
-    public function patient(): BelongsTo
+    public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
 
-    public function availableSchedule(): BelongsTo
+    public function availableSchedule()
     {
         return $this->belongsTo(AvailableSchedule::class);
     }
 
 
-    public function scopeApplyStatusFilter(Builder $query, ?string $statusValue): Builder
+    public function doctor()
     {
-        if (empty($statusValue)) {
-            return $query;
-        }
-
-        return $query->where('status', $statusValue);
+        return $this->hasOneThrough(
+            Doctor::class,
+            AvailableSchedule::class,
+            'id',
+            'id',
+            'available_schedule_id',
+            'doctor_id'
+        );
     }
 
-    public function scopeApplyDoctorFilter(Builder $query, ?int $doctorIdentifier): Builder
+    public function scopeFilterByStatus(Builder $query, ?string $status): Builder
     {
-        if (empty($doctorIdentifier)) {
+        if (!$status || !AppointmentStatus::isValid($status)) {
             return $query;
         }
 
-        return $query->whereHas('availableSchedule', function (Builder $scheduleQuery) use ($doctorIdentifier) {
-            $scheduleQuery->where('doctor_id', $doctorIdentifier);
+        return $query->where('status', $status);
+    }
+
+    public function scopeFilterByDoctor(Builder $query, ?int $doctorId): Builder
+    {
+        if (!$doctorId) {
+            return $query;
+        }
+
+        return $query->whereHas('availableSchedule', function ($q) use ($doctorId) {
+            $q->where('doctor_id', $doctorId);
         });
     }
 
-    public function scopeApplySpecialtyFilter(Builder $query, ?int $specialtyIdentifier): Builder
+    public function scopeFilterBySpecialty(Builder $query, ?int $specialtyId): Builder
     {
-        if (empty($specialtyIdentifier)) {
+        if (!$specialtyId) {
             return $query;
         }
 
-        return $query->whereHas('availableSchedule.doctor.specialties', function (Builder $specialtyQuery) use ($specialtyIdentifier) {
-            $specialtyQuery->where('specialties.id', $specialtyIdentifier);
+        return $query->whereHas('availableSchedule.doctor.specialties', function ($q) use ($specialtyId) {
+            $q->where('id', $specialtyId);
         });
     }
 
-    public function scopeApplyDateRangeFilter(Builder $query, ?string $startDate, ?string $endDate): Builder
+    public function scopeFilterByDateRange(Builder $query, ?string $fromDate, ?string $toDate): Builder
     {
-        if (empty($startDate) && empty($endDate)) {
-            return $query;
-        }
+        return $query->whereHas('availableSchedule', function ($schedule) use ($fromDate, $toDate) {
 
-        return $query->whereHas('availableSchedule', function (Builder $scheduleQuery) use ($startDate, $endDate) {
-            if ($startDate) {
-                $scheduleQuery->whereDate('date', '>=', $startDate);
+            if ($fromDate) {
+                $schedule->whereDate('date', '>=', $fromDate);
             }
-            if ($endDate) {
-                $scheduleQuery->whereDate('date', '<=', $endDate);
+
+            if ($toDate) {
+                $schedule->whereDate('date', '<=', $toDate);
             }
         });
-    }
-
-    public function scopeOnlyUpcomingAppointments(Builder $query): Builder
-    {
-        return $query->whereHas('availableSchedule', function (Builder $scheduleQuery) {
-            $scheduleQuery->whereDate('date', '>=', now()->toDateString());
-        })->where('status', '!=', AppointmentStatus::Cancelada->value);
-    }
-
-    public function scopeOnlyPastAppointments(Builder $query): Builder
-    {
-        return $query->whereHas('availableSchedule', function (Builder $scheduleQuery) {
-            $scheduleQuery->whereDate('date', '<', now()->toDateString());
-        });
-    }
-
-
-    public function markAsCancelled(): bool
-    {
-        return $this->update(['status' => AppointmentStatus::Cancelada->value]);
-    }
-
-    public function markAsCompleted(): bool
-    {
-        return $this->update(['status' => AppointmentStatus::Completado->value]);
-    }
-
-    public function isPending(): bool
-    {
-        return $this->status === AppointmentStatus::Pendiente->value;
-    }
-
-    public function isCancelled(): bool
-    {
-        return $this->status === AppointmentStatus::Cancelada->value;
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->status === AppointmentStatus::Completado->value;
     }
 }
