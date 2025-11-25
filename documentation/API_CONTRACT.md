@@ -203,9 +203,3 @@
 - **PUT** `/work-patterns/{id}`  
   **Descripción:** Desactiva un patrón de trabajo específico.  
   **Middleware:** `auth:sanctum`, `role:doctor`
-
----
-
-## LINK PARA PRUEBAS
-
-[LINK AL POSTMAN](https://emiliano-5376293.postman.co/workspace/Emiliano's-Workspace~72ee73ce-a2ab-4645-87b0-dfde0885a84e/collection/44510226-578ed4a8-8ca8-47ab-8e81-c5dae8f3679e?action=share&creator=emiliano-5376293)
