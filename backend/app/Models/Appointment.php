@@ -1,89 +1,89 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Appointment extends Model
 {
     protected $fillable = [
-        'doctor_id',
         'patient_id',
-        'appointment_date',
+        'available_schedule_id',
         'status',
     ];
+
+    protected $casts = [
+        'status' => AppointmentStatus::class,
+    ];
+
 
     public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
 
+    public function availableSchedule()
+    {
+        return $this->belongsTo(AvailableSchedule::class);
+    }
+
+
     public function doctor()
     {
         return $this->hasOneThrough(
             Doctor::class,
             AvailableSchedule::class,
-            'id', 
-            'id', 
-            'available_schedule_id', 
+            'id',
+            'id',
+            'available_schedule_id',
             'doctor_id'
         );
     }
 
-    public function availableSchedule()
+    public function scopeFilterByStatus(Builder $query, ?string $status): Builder
     {
-        return $this->belongsTo(AvailableSchedule::class); 
+        if (!$status || !AppointmentStatus::isValid($status)) {
+            return $query;
+        }
+
+        return $query->where('status', $status);
     }
 
-    public function scopeFilterByStatus($query, $status)
+    public function scopeFilterByDoctor(Builder $query, ?int $doctorId): Builder
     {
-        if ($status) {
-            $query->where('status', $status);
+        if (!$doctorId) {
+            return $query;
         }
 
-        return $query;
+        return $query->whereHas('availableSchedule', function ($q) use ($doctorId) {
+            $q->where('doctor_id', $doctorId);
+        });
     }
 
-    public function scopeFilterByDoctor($query, $doctorId)
+    public function scopeFilterBySpecialty(Builder $query, ?int $specialtyId): Builder
     {
-        if ($doctorId) {
-            $query->whereHas(
-                'availableSchedule',
-                function ($q) use ($doctorId) {
-                    $q->where('doctor_id', $doctorId);
-                }
-            );
+        if (!$specialtyId) {
+            return $query;
         }
 
-        return $query;
+        return $query->whereHas('availableSchedule.doctor.specialties', function ($q) use ($specialtyId) {
+            $q->where('id', $specialtyId);
+        });
     }
 
-    public function scopeFilterBySpecialty($query, $specialtyId)
+    public function scopeFilterByDateRange(Builder $query, ?string $fromDate, ?string $toDate): Builder
     {
-        if ($specialtyId) {
-            $query->whereHas(
-                'availableSchedule.doctor.specialties',
-                function ($q) use ($specialtyId) {
-                    $q->where('id', $specialtyId);
-                }
-            );
-        }
+        return $query->whereHas('availableSchedule', function ($schedule) use ($fromDate, $toDate) {
 
-        return $query;
-    }
+            if ($fromDate) {
+                $schedule->whereDate('date', '>=', $fromDate);
+            }
 
-    public function scopeFilterByDateRange($query, $fromDate, $toDate)
-    {
-        if ($fromDate) {
-            $query->whereDate('available_schedules.date', '>=', $fromDate);
-        }
-
-        if ($toDate) {
-            $query->whereDate('available_schedules.date', '<=', $toDate);
-        }
-
-        return $query;
+            if ($toDate) {
+                $schedule->whereDate('date', '<=', $toDate);
+            }
+        });
     }
 }

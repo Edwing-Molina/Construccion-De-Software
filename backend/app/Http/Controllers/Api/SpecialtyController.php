@@ -12,9 +12,6 @@ use Illuminate\Http\Request;
 
 final class SpecialtyController extends Controller
 {
-    /**
-     * Get all available medical specialties.
-     */
     public function index(): JsonResponse
     {
         $allSpecialties = Specialty::orderedByName()->get();
@@ -24,9 +21,6 @@ final class SpecialtyController extends Controller
         );
     }
 
-    /**
-     * Get details of a specific specialty.
-     */
     public function show(Specialty $specialty): JsonResponse
     {
         return $this->successResponse(
@@ -34,9 +28,6 @@ final class SpecialtyController extends Controller
         );
     }
 
-    /**
-     * Search specialties by name (case-insensitive).
-     */
     public function search(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
@@ -59,9 +50,6 @@ final class SpecialtyController extends Controller
         );
     }
 
-    /**
-     * Return successful response with data.
-     */
     private function successResponse($data): JsonResponse
     {
         return response()->json([
@@ -69,9 +57,6 @@ final class SpecialtyController extends Controller
         ]);
     }
 
-    /**
-     * Return not found response with empty data.
-     */
     private function notFoundResponse(string $message): JsonResponse
     {
         return response()->json([
