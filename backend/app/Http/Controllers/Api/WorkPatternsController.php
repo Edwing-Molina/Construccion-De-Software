@@ -41,6 +41,14 @@ class WorkPatternsController extends Controller
     }
 
     /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -152,5 +160,13 @@ class WorkPatternsController extends Controller
             'message' => 'Patrón de trabajo desactivado exitosamente y horarios libres actualizados.',
             'data' => $workPattern,
         ], 200);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
     }
 }
