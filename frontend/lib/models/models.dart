@@ -1,0 +1,13 @@
+export 'api_response.dart';
+export 'appointment.dart';
+export 'available_schedule.dart';
+export 'clinic.dart';
+export 'clinic_info.dart';
+export 'doctor.dart';
+export 'doctor_clinic.dart';
+export 'doctor_clinic_pivot.dart';
+export 'doctor_work_pattern.dart';
+export 'enum_days.dart';
+export 'patient.dart';
+export 'specialty.dart';
+export 'user.dart';
