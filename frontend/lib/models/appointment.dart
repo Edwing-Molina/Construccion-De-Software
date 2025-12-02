@@ -1,7 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'available_schedule.dart';
-import 'patient.dart';
 import 'doctor.dart';
 
 part 'appointment.g.dart';
@@ -23,8 +22,8 @@ class Appointment {
   @JsonKey(name: 'status')
   final String status;
 
-  @JsonKey(name: 'patient')
-  final Patient? patient;
+  // @JsonKey(name: 'patient')
+  // final Patient? patient; // Patient model not yet defined in project
 
   @JsonKey(name: 'doctor')
   final Doctor? doctor;
@@ -38,7 +37,7 @@ class Appointment {
     required this.patientId,
     required this.appointmentDate,
     required this.status,
-    this.patient,
+    // this.patient,
     this.doctor,
     this.availableSchedule,
   });
