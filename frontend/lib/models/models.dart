@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+export 'specialty.dart';
+export 'clinic_info.dart';
+export 'patient.dart';
+=======
 export 'api_response.dart';
 export 'appointment.dart';
 export 'available_schedule.dart';
@@ -11,3 +16,4 @@ export 'enum_days.dart';
 export 'patient.dart';
 export 'specialty.dart';
 export 'user.dart';
+>>>>>>> 351c467fab9745fcbe292ed394ca0ff98ba10f5b
