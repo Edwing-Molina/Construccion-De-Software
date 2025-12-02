@@ -18,4 +18,8 @@ enum AppointmentStatus: string
     {
         return in_array($status, self::values(), true);
     }
+        public static function toArray(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
 }

@@ -1,34 +1,68 @@
 <?php
 
-use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SpecialtyController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\DoctorAppointmentController;
 use App\Http\Controllers\Api\PatientAppointmentController;
+use App\Http\Controllers\Api\AvailableSchedulesController;
+use App\Http\Controllers\Api\WorkPatternsController;
+use Illuminate\Support\Facades\Log;
+
+require __DIR__.'/auth.php';
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    //funcionan usando solo el usuario autenticado (no reciben id)
+    Route::get('/me',[ProfileController::class, 'show']);
+    Route::put('/me',[ProfileController::class, 'update']);
     
-    Route::prefix('specialties')->group(function () {
+    Route::get('show/{id}/profile', [ProfileController::class, 'showOtherUser']);
+
+    Route::prefix('specialtys')->group(function () {
         Route::get('/', [SpecialtyController::class, 'index']);
-        Route::get('/search', [SpecialtyController::class, 'search']);
-        Route::get('/{specialty}', [SpecialtyController::class, 'show']);
     });
-    
-    Route::prefix('profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'show']);
-        Route::put('/', [ProfileController::class, 'update']);
+
+    Route::prefix('doctors')->group(function () {
+        Route::get('/', [DoctorController::class, 'index']);
     });
-    
-    Route::get('/users/{userId}/profile', [ProfileController::class, 'showPublicProfile']);
-    
-    Route::prefix('appointments')->name('patient.appointments.')->group(function () {
-        Route::get('/', [PatientAppointmentController::class, 'listPatientAppointments'])
-            ->name('list');
-            
-        Route::post('/', [PatientAppointmentController::class, 'bookNewAppointment'])
-            ->name('book');
-            
-        Route::patch('/{appointmentIdentifier}/cancel', [PatientAppointmentController::class, 'cancelExistingAppointment'])
-            ->name('cancel');
+
+    // Rutas para usuarios con el rol de pacientes
+    Route::middleware('role:patient')->group(function() {
+
+        Route::apiResource('patient-appointments', PatientAppointmentController::class);
+
+        
+        Route::prefix('patient-available-schedules')->group(function () {
+
+            Route::get('/', [AvailableSchedulesController::class, 'index']);
+
+        });
+        
     });
+
+    // Rutas para usuarios con el rol de doctores
+    Route::middleware('role:doctor')->group(function () {
+
+        Route::prefix('doctor-appointments')->group(function() {
+
+            Route::get('/', [DoctorAppointmentController::class, 'index']);
+
+            Route::put('/{appointment_id}/complete', [DoctorAppointmentController::class, 'update']);
+                
+            });
+        
+        Route::prefix('doctor-available-schedules')->group(function() {
+
+            Route::get('/', [AvailableSchedulesController::class, 'index']);
+
+            Route::post('/generate', [AvailableSchedulesController::class, 'store']);
+
+        });
+
+        Route::apiResource('work-patterns', WorkPatternsController::class);
+
+        });
 
 });
