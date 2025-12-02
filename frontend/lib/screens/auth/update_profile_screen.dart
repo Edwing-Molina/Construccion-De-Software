@@ -55,11 +55,13 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
       final perfilService = serviceLocator.profileService;
       final specialtyService = serviceLocator.specialtyService;
 
+      // Cargar todas las especialidades disponibles
       final allSpecialtiesResponse = await specialtyService.getAllSpecialties();
       if (allSpecialtiesResponse.success) {
         _allSpecialties = allSpecialtiesResponse.data ?? [];
       }
 
+      // Cargar el perfil del usuario
       final response = await perfilService.getProfile();
       final user = response.data;
 
@@ -77,7 +79,9 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
           final specialtyList = userJson['specialtys'] as List?;
 
           if (specialtyList != null) {
-            _specialties = specialtyList.map((e) => Specialty.fromJson(e)).toList();
+            _specialties =
+                specialtyList.map((e) => Specialty.fromJson(e)).toList();
+            // Configurar las especialidades seleccionadas
             _selectedSpecialtyIds = _specialties.map((s) => s.id).toList();
           }
 
