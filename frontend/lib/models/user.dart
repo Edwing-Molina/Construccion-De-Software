@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'doctor.dart';
-import 'patient.dart';
 import 'specialty.dart';
 import 'doctor_clinic.dart';
 
@@ -36,8 +35,8 @@ class User {
   @JsonKey(name: 'doctor')
   final Doctor? doctor;
 
-  @JsonKey(name: 'patient')
-  final Patient? patient;
+  // @JsonKey(name: 'patient')
+  // final Patient? patient; // Patient model not yet defined in project
 
   // Datos adicionales para doctores (vienen directamente en la respuesta)
   @JsonKey(name: 'specialtys')
@@ -54,7 +53,7 @@ class User {
     this.password,
     this.rememberToken,
     this.doctor,
-    this.patient,
+    // this.patient,
     this.specialties,
     this.clinics,
   });
