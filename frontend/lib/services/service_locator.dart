@@ -45,16 +45,20 @@ Future<void> setupServices() async {
   if (AppEnvironment.useMockServices) {
     AppEnvironment.printDebug('Usando servicios mock para testing');
   } else {
+    AppEnvironment.printDebug('Usando servicios reales desde API');
     serviceLocator.registerSingleton<AuthService>(AuthService());
   }
 
   final authService = serviceLocator.get<AuthService>();
+  AppEnvironment.printDebug('AuthService registrado correctamente');
 
   serviceLocator.registerSingleton<ProfileService>(ProfileService());
   serviceLocator.registerSingleton<ServiceCitas>(ServiceCitas());
   serviceLocator.registerSingleton<SpecialtyService>(
     SpecialtyService(authService),
   );
+  
+  AppEnvironment.printDebug('Todos los servicios inicializados correctamente');
 }
 
 extension ServiceLocatorExtensions on ServiceLocator {

@@ -44,7 +44,7 @@ class AppointmentSeeder extends Seeder
                     $appointment = Appointment::create([
                         'patient_id' => $patient->id,
                         'available_schedule_id' => $schedule->id,
-                        'status' => 'Pendiente',
+                        'status' => 'pendiente',
                     ]);
 
                     $schedule->update(['available' => false]);

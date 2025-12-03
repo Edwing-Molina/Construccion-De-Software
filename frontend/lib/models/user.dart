@@ -1,3 +1,4 @@
+import 'package:frontend/models/patient.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'doctor.dart';
 import 'specialty.dart';
@@ -35,8 +36,8 @@ class User {
   @JsonKey(name: 'doctor')
   final Doctor? doctor;
 
-  // @JsonKey(name: 'patient')
-  // final Patient? patient; // Patient model not yet defined in project
+  @JsonKey(name: 'patient')
+  final Patient? patient; // Patient model not yet defined in project
 
   // Datos adicionales para doctores (vienen directamente en la respuesta)
   @JsonKey(name: 'specialtys')
@@ -53,11 +54,12 @@ class User {
     this.password,
     this.rememberToken,
     this.doctor,
-    // this.patient,
+    this.patient,
     this.specialties,
     this.clinics,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+
   Map<String, dynamic> toJson() => _$UserToJson(this);
 }

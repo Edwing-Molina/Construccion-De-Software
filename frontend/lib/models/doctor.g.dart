@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'doctor.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 Doctor _$DoctorFromJson(Map<String, dynamic> json) => Doctor(
   id: (json['id'] as num?)?.toInt(),

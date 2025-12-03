@@ -7,13 +7,13 @@ class AppConfig {
   static const Map<String, Map<String, String>> platformUrls = {
     'development': {
       // Para desarrollo web (Flutter web)
-      'web': 'http://localhost:8000/api',
+      'web': 'http://192.168.1.233:8000/api',
       // Para desarrollo móvil (Android/iOS) - mismo dominio local
-      'mobile': 'http://192.168.1.177/sistema-citas-medicas/Backend/public/api',
+      'mobile': 'http://192.168.1.233:8000/api',
     },
     'production': {
       'web': 'https://servidor-produccion.com/api',
-      'mobile': 'https://servidor-produccion.com/api',
+      'mobile': 'https://servidor-produccion.com/public/api',
     },
   };
 

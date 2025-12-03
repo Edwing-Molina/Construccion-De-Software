@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'doctor_work_pattern.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 DoctorWorkPattern _$DoctorWorkPatternFromJson(Map<String, dynamic> json) =>
     DoctorWorkPattern(

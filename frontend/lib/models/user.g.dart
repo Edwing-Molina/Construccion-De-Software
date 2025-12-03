@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'user.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 User _$UserFromJson(Map<String, dynamic> json) => User(
   id: (json['id'] as num).toInt(),
@@ -13,6 +17,10 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       json['doctor'] == null
           ? null
           : Doctor.fromJson(json['doctor'] as Map<String, dynamic>),
+  patient:
+      json['patient'] == null
+          ? null
+          : Patient.fromJson(json['patient'] as Map<String, dynamic>),
   specialties:
       (json['specialtys'] as List<dynamic>?)
           ?.map((e) => Specialty.fromJson(e as Map<String, dynamic>))
@@ -29,6 +37,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'email': instance.email,
   'phone': instance.phone,
   'doctor': instance.doctor?.toJson(),
+  'patient': instance.patient?.toJson(),
   'specialtys': instance.specialties?.map((e) => e.toJson()).toList(),
   'clinics': instance.clinics?.map((e) => e.toJson()).toList(),
 };

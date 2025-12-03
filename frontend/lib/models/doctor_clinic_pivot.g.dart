@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'doctor_clinic_pivot.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 DoctorClinicPivot _$DoctorClinicPivotFromJson(Map<String, dynamic> json) =>
     DoctorClinicPivot(
