@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Appointment;
+use App\Http\Resources\AppointmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use App\Enums\AppointmentStatus;
@@ -32,12 +33,18 @@ class PatientAppointmentController extends Controller
             ->filterByDoctor($filters['doctor_id'])
             ->filterBySpecialty($filters['specialty_id'])
             ->filterByDateRange($filters['from_date'], $filters['to_date'])
-            ->with(['availableSchedule.doctor', 'patient'])
+            ->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user'])
             ->paginate($perPage);
 
         return response()->json([
             'message' => 'Citas obtenidas correctamente',
-            'data' => $appointments,
+            'data' => AppointmentResource::collection($appointments),
+            'pagination' => [
+                'total' => $appointments->total(),
+                'per_page' => $appointments->perPage(),
+                'current_page' => $appointments->currentPage(),
+                'last_page' => $appointments->lastPage(),
+            ]
         ]);
     }
 
@@ -75,12 +82,12 @@ class PatientAppointmentController extends Controller
         $patient = $request->user();
 
         $appointment = Appointment::where('patient_id', $patient->id)
-            ->with(['availableSchedule.doctor', 'patient'])
+            ->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user'])
             ->findOrFail($id);
 
         return response()->json([
             'message' => 'Cita obtenida correctamente',
-            'data' => $appointment,
+            'data' => new AppointmentResource($appointment),
         ]);
     }
 
@@ -117,7 +124,7 @@ class PatientAppointmentController extends Controller
 
         return response()->json([
             'message' => 'Cita cancelada correctamente.',
-            'data' => $appointment,
+            'data' => new AppointmentResource($appointment),
         ]);
     }
 

@@ -18,6 +18,9 @@ class ProfileService extends BaseService {
       final url = Uri.parse('${BaseService.baseUrl}/me');
       final body = json.encode(profileData);
 
+      // Debug: Log del body enviado
+      print('Profile update body: $body');
+
       final response = await http.put(
         url,
         headers: headersWithAuth(token),
@@ -25,6 +28,10 @@ class ProfileService extends BaseService {
       );
 
       final responseData = json.decode(response.body);
+
+      // Debug: Log de la respuesta
+      print('Profile update response: ${response.statusCode}');
+      print('Profile update response body: ${response.body}');
 
       if (response.statusCode == 200 && responseData['data'] != null) {
         return ApiResponse<User>(
@@ -107,18 +114,18 @@ class ProfileService extends BaseService {
     String? description,
     required List<int> specialtyIds,
     required List<Map<String, dynamic>>
-    clinics,
+    clinics, // Cambio: ahora incluye consultorio
   }) {
     final Map<String, dynamic> doctorData = {
       'description': description,
-      'clinics': clinics,
+      'clinics': clinics, // Formato: [{'clinic_id': 1, 'office_number': '15'}]
     };
 
     final Map<String, dynamic> profile = {
       'name': name,
       'phone': phone,
       'doctor': doctorData,
-      'specialty_ids': specialtyIds,
+      'specialty_ids': specialtyIds, // Mover specialty_ids al nivel raíz
     };
 
     return profile;

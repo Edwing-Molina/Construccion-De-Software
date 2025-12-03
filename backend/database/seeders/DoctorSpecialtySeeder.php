@@ -20,14 +20,14 @@ class DoctorSpecialtySeeder extends Seeder
         $specialty2 = Specialty::where('name', 'Pediatria')->first();
 
         if ($doctor && $specialty) {
-            $doctor->specialtys()->attach($specialty->id);
+            $doctor->specialties()->attach($specialty->id);
             $this->command->info("Asignada especialidad '{$specialty->name}' al doctor '{$doctor->user->name}'.");
         } else {
             $this->command->warn("No se pudo encontrar el doctor o la especialidad para asignación.");
         }
 
         if ($doctor2 && $specialty2) {
-            $doctor2->specialtys()->attach($specialty2->id);
+            $doctor2->specialties()->attach($specialty2->id);
             $this->command->info("Asignada especialidad '{$specialty2->name}' al doctor '{$doctor2->user->name}'.");
         } else {
             $this->command->warn("No se pudo encontrar el doctor o la especialidad para asignación.");

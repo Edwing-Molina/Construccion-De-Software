@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Clinic;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Doctor extends Model
@@ -28,7 +29,7 @@ class Doctor extends Model
 
     public function clinics()
     {
-        return $this->belongsToMany(Clinic::class, 'doctor_clinic')
+        return $this->belongsToMany(Clinic::class, 'doctor_clinics')
                     ->withPivot('office_number');
     }
 

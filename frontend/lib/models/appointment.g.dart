@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'appointment.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
   id: (json['id'] as num?)?.toInt(),
@@ -10,6 +14,10 @@ Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
           ? null
           : DateTime.parse(json['appointment_date'] as String),
   status: json['status'] as String,
+  patient:
+      json['patient'] == null
+          ? null
+          : Patient.fromJson(json['patient'] as Map<String, dynamic>),
   doctor:
       json['doctor'] == null
           ? null
@@ -28,6 +36,7 @@ Map<String, dynamic> _$AppointmentToJson(Appointment instance) =>
       'patient_id': instance.patientId,
       'appointment_date': instance.appointmentDate?.toIso8601String(),
       'status': instance.status,
+      'patient': instance.patient?.toJson(),
       'doctor': instance.doctor?.toJson(),
       'available_schedule': instance.availableSchedule?.toJson(),
     };

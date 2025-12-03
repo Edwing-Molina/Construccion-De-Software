@@ -1,3 +1,4 @@
+import 'package:frontend/models/patient.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'available_schedule.dart';
@@ -22,8 +23,8 @@ class Appointment {
   @JsonKey(name: 'status')
   final String status;
 
-  // @JsonKey(name: 'patient')
-  // final Patient? patient; // Patient model not yet defined in project
+  @JsonKey(name: 'patient')
+  final Patient? patient; // Patient model not yet defined in project
 
   @JsonKey(name: 'doctor')
   final Doctor? doctor;
@@ -37,7 +38,7 @@ class Appointment {
     required this.patientId,
     required this.appointmentDate,
     required this.status,
-    // this.patient,
+    this.patient,
     this.doctor,
     this.availableSchedule,
   });
@@ -45,7 +46,6 @@ class Appointment {
   /// Creates an Appointment from a JSON map.
   factory Appointment.fromJson(Map<String, dynamic> json) =>
       _$AppointmentFromJson(json);
-
 
   /// Converts this Appointment to a JSON map.
   Map<String, dynamic> toJson() => _$AppointmentToJson(this);

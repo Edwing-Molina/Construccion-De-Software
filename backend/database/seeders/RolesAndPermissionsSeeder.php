@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use GuzzleHttp\Promise\Create;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -15,31 +14,51 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        
         $patientRole = Role::firstOrCreate(['name' => 'patient']);
         $doctorRole = Role::firstOrCreate(['name' => 'doctor']);
 
-        Permission::create(['name' => 'view own profile']);
-        Permission::create(['name' => 'edit own profile']);
-
-        Permission::create(['name' => 'view doctors list']);
-        Permission::create(['name' => 'view specialtys list']);
-
-        Permission::create(['name' => 'view own appointments']);
-        Permission::create(['name' => 'create appointment']);
-        Permission::create(['name' => 'cancel own appointment']);
-        Permission::create(['name' => 'complete appointment']);
-
-        Permission::create(['name' => 'create a work pattern']);
-        Permission::create(['name' => 'create available schedules']);
         
-        // ...
+        $permissions = [
+            'view own profile',
+            'edit own profile',
+            'view doctors list',
+            'view specialtys list',
+            'view own appointments',
+            'create appointment',
+            'cancel own appointment',
+            'complete appointment',
+            'create a work pattern',
+            'create available schedules',
+        ];
 
-        $patientRole = Role::findByName('patient');
-        $patientRole->givePermissionTo([]);
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-        $doctorRole = Role::findByName('doctor');
-        $doctorRole->givePermissionTo(['']); 
+        
+
+        
+        $doctorRole->syncPermissions([
+            'view own profile',
+            'edit own profile',
+            'complete appointment',
+            'create a work pattern',
+            'create available schedules',
+        ]);
+
+        
+        $patientRole->syncPermissions([
+            'view own profile',
+            'edit own profile',
+            'view doctors list',
+            'view specialtys list',
+            'view own appointments',
+            'create appointment',
+            'cancel own appointment',
+        ]);
     }
 }

@@ -1,30 +1,35 @@
-// This is a basic Flutter widget test.
+// Widget tests for the Medical Appointment System
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// This test verifies that the main app initializes correctly with the router configuration.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:frontend/main.dart';
+import 'package:frontend/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('MyApp Widget Tests', () {
+    testWidgets('App initializes and displays MaterialApp.router', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(find.byType(MaterialApp), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      final materialApp =
+          find.byType(MaterialApp).evaluate().first.widget as MaterialApp;
+      expect(materialApp.title, 'Sistema de Citas Médicas');
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    testWidgets('MyApp theme is configured correctly', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MyApp());
+
+      final materialApp =
+          find.byType(MaterialApp).evaluate().first.widget as MaterialApp;
+      expect(materialApp.theme, isNotNull);
+      expect(materialApp.debugShowCheckedModeBanner, false);
+    });
   });
 }

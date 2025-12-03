@@ -3,14 +3,20 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +26,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
     ];
 
@@ -33,6 +40,16 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function doctor() 
+    { 
+        return $this->hasOne(Doctor::class); 
+    }
+
+    public function patient() 
+    { 
+        return $this->hasOne(Patient::class); 
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -45,4 +62,5 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    
 }

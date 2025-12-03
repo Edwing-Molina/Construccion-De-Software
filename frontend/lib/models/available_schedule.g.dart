@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'available_schedule.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 AvailableSchedule _$AvailableScheduleFromJson(Map<String, dynamic> json) =>
     AvailableSchedule(

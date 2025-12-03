@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'clinic_info.dart';
 
+// **************************************************************************
 // JsonSerializableGenerator
+// **************************************************************************
 
 ClinicInfo _$ClinicInfoFromJson(Map<String, dynamic> json) => ClinicInfo(
   id: (json['id'] as num).toInt(),

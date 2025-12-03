@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,10 +14,6 @@ use Illuminate\Support\Facades\Log;
 
 class DoctorAppointmentController extends Controller
 {
-    use AuthorizesRequests;
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -48,13 +45,13 @@ class DoctorAppointmentController extends Controller
             });
         }
 
-        $query->with(['availableSchedule', 'patient.user']);
+        $query->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user']);
 
         $appointments = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'count' => $appointments->count(),
-            'data' => $appointments,
+            'data' => AppointmentResource::collection($appointments),
         ], 200);
     }
 

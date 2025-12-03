@@ -10,3 +10,4 @@ export 'doctor_work_pattern.dart';
 export 'enum_days.dart';
 export 'specialty.dart';
 export 'user.dart';
+export 'patient.dart';
