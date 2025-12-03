@@ -19,7 +19,7 @@ final class PatientTest extends TestCase
 
         $expectedFields = [
             'user_id',
-            'birth_date',
+            'birth',
             'blood_type',
             'emergency_contact_name',
             'emergency_contact_phone',
@@ -41,13 +41,13 @@ final class PatientTest extends TestCase
         $this->assertArrayNotHasKey('deleted_at', $patientArray);
     }
 
-    public function test_birth_date_is_cast_to_date(): void
+    public function test_birth_is_cast_to_date(): void
     {
         $patient = Patient::factory()
             ->for(User::factory())
-            ->create(['birth_date' => '1990-05-15']);
+            ->create(['birth' => '1990-05-15']);
 
-        $this->assertInstanceOf(\Carbon\Carbon::class, $patient->birth_date);
+        $this->assertInstanceOf(\Carbon\Carbon::class, $patient->birth);
     }
 
     public function test_patient_belongs_to_user(): void

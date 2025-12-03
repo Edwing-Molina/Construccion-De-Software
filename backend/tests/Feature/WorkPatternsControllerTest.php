@@ -26,9 +26,13 @@ class WorkPatternsControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Create roles
+        \Spatie\Permission\Models\Role::create(['name' => 'doctor', 'guard_name' => 'web']);
+        \Spatie\Permission\Models\Role::create(['name' => 'patient', 'guard_name' => 'web']);
+
         // Crea un usuario con rol doctor y su modelo Doctor asociado
         $this->user = User::factory()->create();
-        // Asume que tienes roles; si no, ajusta la verificación de rol en el controlador
+        $this->user->assignRole('doctor');
 
         $this->doctor = Doctor::factory()->create([
             'user_id' => $this->user->id,
@@ -40,6 +44,7 @@ class WorkPatternsControllerTest extends TestCase
     public function test_index_returns_403_when_no_doctor_associated(): void
     {
         $userWithoutDoctor = User::factory()->create();
+        $userWithoutDoctor->assignRole('doctor');
 
         $response = $this->actingAs($userWithoutDoctor)
             ->getJson('/api/work-patterns');
@@ -103,6 +108,7 @@ class WorkPatternsControllerTest extends TestCase
     public function test_store_returns_403_when_no_doctor_associated(): void
     {
         $userWithoutDoctor = User::factory()->create();
+        $userWithoutDoctor->assignRole('doctor');
 
         $payload = [
             'clinic_id' => $this->clinic->id,
@@ -160,6 +166,7 @@ class WorkPatternsControllerTest extends TestCase
     public function test_update_returns_403_when_no_doctor_associated(): void
     {
         $userWithoutDoctor = User::factory()->create();
+        $userWithoutDoctor->assignRole('doctor');
 
         $pattern = DoctorWorkPattern::factory()->create([
             'doctor_id' => $this->doctor->id,
