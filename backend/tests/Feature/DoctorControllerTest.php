@@ -17,6 +17,13 @@ class DoctorControllerTest extends TestCase
 
     public function test_index_returns_paginated_doctors_with_hidden_fields(): void
     {
+        // Create authenticated user
+        $authenticatedUser = User::create([
+            'name' => 'Patient User',
+            'email' => 'patient@example.com',
+            'password' => bcrypt('secret'),
+        ]);
+
         // Crear usuario y doctor 1
         $user1 = User::create([
             'name' => 'Dr. Smith',
@@ -53,8 +60,8 @@ class DoctorControllerTest extends TestCase
         $doctor2->specialties()->attach($specialty2->id);
         $doctor2->clinics()->attach($clinic2->id, ['office_number' => '202']);
 
-        // Llamar endpoint filtrando por specialty_id del primero
-        $response = $this->getJson('/api/doctors?per_page=10&specialty_id=' . $specialty1->id);
+        // Llamar endpoint filtrando por specialty_id del primero (now authenticated)
+        $response = $this->actingAs($authenticatedUser)->getJson('/api/doctors?per_page=10&specialty_id=' . $specialty1->id);
 
         $response->assertOk();
 

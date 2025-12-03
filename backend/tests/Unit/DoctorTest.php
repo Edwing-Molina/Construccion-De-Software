@@ -54,7 +54,8 @@ class DoctorTest extends TestCase
 
     public function test_doctor_has_appointments_relationship(): void
     {
-        $appointment = Appointment::factory()->create(['doctor_id' => $this->doctor->id]);
+        $availableSchedule = AvailableSchedule::factory()->create(['doctor_id' => $this->doctor->id]);
+        $appointment = Appointment::factory()->create(['available_schedule_id' => $availableSchedule->id]);
 
         $this->assertTrue($this->doctor->appointments->contains($appointment));
     }
@@ -69,9 +70,11 @@ class DoctorTest extends TestCase
     public function test_is_available_returns_true_when_schedule_is_available(): void
     {
         $dateTime = Carbon::now()->addDay();
+        $clinic = Clinic::factory()->create();
 
         AvailableSchedule::factory()->create([
             'doctor_id' => $this->doctor->id,
+            'clinic_id' => $clinic->id,
             'date' => $dateTime->toDateString(),
             'start_time' => $dateTime->format('H:i:s'),
             'available' => true,
@@ -100,7 +103,7 @@ class DoctorTest extends TestCase
 
         Appointment::factory()->create([
             'available_schedule_id' => $availableSchedule->id,
-            'status' => 'confirmed',
+            'status' => 'pendiente',
         ]);
 
         $this->assertFalse($this->doctor->isAvailable($dateTime, 1));

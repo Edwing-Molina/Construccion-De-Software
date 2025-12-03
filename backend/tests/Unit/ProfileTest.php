@@ -43,7 +43,7 @@ final class ProfileTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'patient' => ['id', 'birth_date', 'blood_type']
+                    'patient' => ['id', 'birth', 'blood_type']
                 ]
             ])
             ->assertJsonFragment(['blood_type' => 'O+']);
