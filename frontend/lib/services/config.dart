@@ -7,9 +7,9 @@ class AppConfig {
   static const Map<String, Map<String, String>> platformUrls = {
     'development': {
       // Para desarrollo web (Flutter web)
-      'web': 'http://192.168.1.233:8000/api',
+      'web': 'http://10.1.134.251:8000/api',
       // Para desarrollo móvil (Android/iOS) - mismo dominio local
-      'mobile': 'http://192.168.1.233:8000/api',
+      'mobile': 'http://10.1.134.251:8000/api',
     },
     'production': {
       'web': 'https://servidor-produccion.com/api',

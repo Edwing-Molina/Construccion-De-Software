@@ -42,7 +42,6 @@ class AgendarService extends BaseService {
       '[AgendarService] Creando cita con schedule ID: $availableScheduleId',
     );
     print('[AgendarService] URL: $uri');
-    print('[AgendarService] Token: $token');
 
     final body = json.encode({'available_schedule_id': availableScheduleId});
     print('[AgendarService] Body: $body');
@@ -56,9 +55,22 @@ class AgendarService extends BaseService {
     print('[AgendarService] Response status: ${response.statusCode}');
     print('[AgendarService] Response body: ${response.body}');
 
-    return handleResponse(
-      response,
-      (json) => Appointment.fromJson(json['appointment']),
-    );
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(
+        'Error al crear cita: ${errorData['message'] ?? response.body}',
+      );
+    }
+
+    final responseData = jsonDecode(response.body);
+
+    // El backend devuelve { "message": "...", "appointment": {...} }
+    if (responseData.containsKey('appointment')) {
+      return Appointment.fromJson(responseData['appointment']);
+    } else {
+      throw Exception(
+        'Respuesta inesperada: no se encontró "appointment" en la respuesta',
+      );
+    }
   }
 }

@@ -91,18 +91,26 @@ class _AgendarScreenState extends State<AgendarScreen> {
   }
 
   Future<void> _bookAppointment(int availableScheduleId) async {
+    print(
+      '[AgendasScreen] _bookAppointment llamado con ID: $availableScheduleId',
+    );
+
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
+      print('[AgendasScreen] Llamando a createAppointment...');
       await _agendarService.createAppointment(availableScheduleId);
+      print('[AgendasScreen] Cita creada, recargando datos...');
       await _loadData();
+      print('[AgendasScreen] Datos recargados');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cita agendada exitosamente')),
       );
     } catch (e) {
+      print('[AgendasScreen] ERROR: $e');
       setState(() => _error = 'Error al agendar cita: $e');
     } finally {
       setState(() => _loading = false);
@@ -287,6 +295,14 @@ class _AgendarScreenState extends State<AgendarScreen> {
                   s.date.day == _selectedDay!.day,
             )
             .toList();
+
+    print('[AgendasScreen] Build: _selectedDay=$_selectedDay');
+    print(
+      '[AgendasScreen] Build: _availableSchedules count=${_availableSchedules.length}',
+    );
+    print(
+      '[AgendasScreen] Build: horariosDelDia count=${horariosDelDia.length}',
+    );
 
     return SafeArea(
       child: DraggableScrollableSheet(

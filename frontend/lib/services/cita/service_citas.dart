@@ -27,32 +27,58 @@ class ServiceCitas extends BaseService {
     final response = await http.get(url, headers: headersWithAuth(token));
     final data = jsonDecode(response.body);
 
+    List<Appointment> citasList = [];
+
     if (data is Map && data['data'] is Map) {
       final paginatedData = data['data'] as Map<String, dynamic>;
       if (paginatedData.containsKey('data') && paginatedData['data'] is List) {
-        // Caso paginación
-        final citasList = paginatedData['data'] as List;
-        return citasList
-            .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
+        final rawList = paginatedData['data'] as List;
+        citasList =
+            rawList
+                .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+                .toList();
       } else if (paginatedData is List) {
-        // Caso lista simple en data
-        final citasList = paginatedData as List;
-        return citasList
-            .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
+        final rawList = paginatedData as List;
+        citasList =
+            rawList
+                .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+                .toList();
       } else {
         throw Exception('Datos de citas inesperados');
       }
     } else if (data is Map && data['data'] is List) {
-      // Caso donde 'data' es lista directa (no paginada)
-      final citasList = data['data'] as List;
-      return citasList
-          .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      final rawList = data['data'] as List;
+      citasList =
+          rawList
+              .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
     } else {
       throw Exception('Respuesta inválida al listar citas');
     }
+
+    // Filtrar citas que no estén pasadas (solo hoy en adelante)
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final filtered =
+        citasList.where((cita) {
+          final scheduleDate = cita.availableSchedule?.date;
+
+          if (scheduleDate == null) {
+            return true;
+          }
+
+          final scheduleDateOnly = DateTime(
+            scheduleDate.year,
+            scheduleDate.month,
+            scheduleDate.day,
+          );
+
+          return scheduleDateOnly.isAfter(today) ||
+              scheduleDateOnly.isAtSameMomentAs(today);
+        }).toList();
+
+    return filtered;
   }
 
   Future<ApiResponse<void>> completarCita(int appointmentId) async {
@@ -90,137 +116,67 @@ class ServiceCitas extends BaseService {
     if (token == null) throw Exception('Token no disponible');
 
     final url = Uri.parse(
-      '${BaseService.baseUrl}/patient-appointments/$appointmentId',
+      '${BaseService.baseUrl}/patient-appointments/$appointmentId', // Ajusta la ruta si es diferente
     );
 
-    print('[ServiceCitas] Cancelando cita $appointmentId desde: $url');
+    final response = await http.put(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({}), // O null si el backend acepta sin body
+    );
 
-    try {
-      final response = await http.put(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({}),
-      );
+    print('Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
 
-      print('[ServiceCitas] Status cancelación: ${response.statusCode}');
-      print('[ServiceCitas] Response: ${response.body}');
-
-      if (response.statusCode != 200) {
-        final errorBody = jsonDecode(response.body);
-        throw Exception(
-          'Error ${response.statusCode}: ${errorBody['message'] ?? response.body}',
-        );
-      }
-
-      final data = jsonDecode(response.body);
-      return ApiResponse<void>(
+    return handleResponse(
+      response,
+      (data) => ApiResponse<void>(
         success: true,
         data: null,
         message: data['message'] ?? 'Cita cancelada exitosamente',
-      );
-    } catch (e) {
-      print('[ServiceCitas] ERROR en cancelación: $e');
-      rethrow;
-    }
+      ),
+    );
   }
 
   /// Obtiene el historial de citas del paciente autenticado.
+  ///
+  /// Nota: asume que el endpoint para historial es
+  /// `/patient-appointments/history`. Si el backend usa otra ruta,
+  /// reemplazarla por la correspondiente.
   Future<List<Appointment>> obtenerHistorialMedico() async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Sesión no válida');
 
     final url = Uri.parse('${BaseService.baseUrl}/patient-appointments');
 
-    print('[ServiceCitas] Solicitando historial desde: $url');
+    final response = await http.get(url, headers: headersWithAuth(token));
+    final data = jsonDecode(response.body);
 
-    try {
-      final response = await http
-          .get(url, headers: headersWithAuth(token))
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw Exception('Timeout obteniendo historial'),
-          );
-
-      print('[ServiceCitas] Status: ${response.statusCode}');
-      print('[ServiceCitas] Content-Type: ${response.headers['content-type']}');
-      final bodyPreview =
-          response.body.length > 500
-              ? response.body.substring(0, 500)
-              : response.body;
-      print('[ServiceCitas] Body preview: $bodyPreview');
-
-      if (response.statusCode != 200) {
-        throw Exception('Error ${response.statusCode}: ${response.body}');
-      }
-
-      final decodedData = jsonDecode(response.body) as Map<String, dynamic>;
-      print('[ServiceCitas] Decodificado exitosamente');
-      print('[ServiceCitas] Top-level keys: ${decodedData.keys.toList()}');
-
-      // El backend envía: { "message": "...", "data": { "data": [...], ...paginate info } }
-      final dataWrapper = decodedData['data'];
-      if (dataWrapper == null) {
-        throw Exception('No existe clave "data" en respuesta');
-      }
-
-      print('[ServiceCitas] Tipo de dataWrapper: ${dataWrapper.runtimeType}');
-
-      List<dynamic> citasRaw = [];
-
-      if (dataWrapper is Map<String, dynamic>) {
-        // Es paginación Laravel: { "data": [...], "total": 10, ...}
-        citasRaw = (dataWrapper['data'] ?? []) as List<dynamic>;
-        print(
-          '[ServiceCitas] Estructura paginada. Citas raw: ${citasRaw.length}',
-        );
-      } else if (dataWrapper is List<dynamic>) {
-        // Es un array directo
-        citasRaw = dataWrapper;
-        print(
-          '[ServiceCitas] Estructura de array. Citas raw: ${citasRaw.length}',
-        );
+    if (data is Map && data['data'] is Map) {
+      final paginatedData = data['data'] as Map<String, dynamic>;
+      if (paginatedData.containsKey('data') && paginatedData['data'] is List) {
+        final citasList = paginatedData['data'] as List;
+        return citasList
+            .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      } else if (paginatedData is List) {
+        final citasList = paginatedData as List;
+        return citasList
+            .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
       } else {
-        throw Exception(
-          'dataWrapper tiene tipo inesperado: ${dataWrapper.runtimeType}',
-        );
+        throw Exception('Datos de historial inesperados');
       }
-
-      // Convertir cada item a Appointment
-      final appointments = <Appointment>[];
-      for (int i = 0; i < citasRaw.length; i++) {
-        try {
-          final citaJson = citasRaw[i] as Map<String, dynamic>;
-          final appointment = Appointment.fromJson(citaJson);
-          appointments.add(appointment);
-          print('[ServiceCitas] Cita $i parseada: id=${appointment.id}');
-        } catch (e) {
-          print('[ServiceCitas] Error parseando cita $i: $e');
-          print('[ServiceCitas] JSON raw: ${citasRaw[i]}');
-          // No relanzar, continuar con las demás
-        }
-      }
-
-      // Filtrar solo las completadas
-      final completadas =
-          appointments.where((apt) {
-            final isCompleted = apt.status?.toLowerCase() == 'completado';
-            print(
-              '[ServiceCitas] Cita id=${apt.id} status=${apt.status} - completada=$isCompleted',
-            );
-            return isCompleted;
-          }).toList();
-
-      print(
-        '[ServiceCitas] Total citas parseadas: ${appointments.length}, completadas: ${completadas.length}',
-      );
-      return completadas;
-    } catch (e, stacktrace) {
-      print('[ServiceCitas] EXCEPCION: $e');
-      print('[ServiceCitas] Stack: $stacktrace');
-      rethrow;
+    } else if (data is Map && data['data'] is List) {
+      final citasList = data['data'] as List;
+      return citasList
+          .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } else {
+      throw Exception('Respuesta inválida al obtener historial');
     }
   }
 }

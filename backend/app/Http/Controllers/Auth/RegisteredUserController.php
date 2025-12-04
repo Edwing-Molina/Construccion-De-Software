@@ -23,100 +23,123 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $role = $request->input('role', 'patient');
-        
-        $rules = [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ];
-
-        // Validaciones adicionales para doctores
-        if ($role === 'doctor') {
-            $rules['cedula'] = ['required', 'string', 'max:50', 'unique:doctors,description'];
-            $rules['clinica'] = ['required', 'string', 'max:255'];
-        }
-
-        $request->validate($rules);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->string('password')),
-        ]);
-
-        if ($role === 'doctor') {
-            // Crear o buscar clínica
-            $clinic = Clinic::firstOrCreate(
-                ['name' => $request->clinica],
-                [
-                    'name' => $request->clinica,
-                    'address' => 'Por definir',
-                ]
-            );
-
-            // Asignar rol de doctor
-            $user->assignRole('doctor');
-
-            // Crear perfil de doctor
-            Log::info('Creating doctor profile for user:', [
-                'user_id' => $user->id,
-                'clinic_id' => $clinic->id,
-                'cedula' => $request->cedula
-            ]);
+        try {
+            $role = $request->input('role', 'patient');
             
-            $doctor = $user->doctor()->create([
-                'user_id' => $user->id,
-                'description' => $request->cedula,
-                'license_number' => 'temp_' . time(),
-                'profile_picture_url' => '',
-                'is_active' => true,
+            $rules = [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+                'phone' => ['nullable', 'string', 'max:20', 'unique:'.User::class],
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ];
+
+            // Validaciones adicionales para doctores
+            if ($role === 'doctor') {
+                $rules['cedula'] = ['required', 'string', 'max:50', 'unique:doctors,description'];
+                $rules['clinica'] = ['required', 'string', 'max:255'];
+            }
+
+            $request->validate($rules);
+
+            Log::info('Starting user registration', ['email' => $request->email, 'role' => $role]);
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->string('password')),
             ]);
 
-            // Asociar clínica al doctor
-            $doctor->clinics()->attach($clinic->id);
-        } else {
-            // Asignar rol de paciente
-            $user->assignRole('patient');
+            Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email]);
 
-            if (!$user->patient) {
-                Log::info('Creating patient profile for user:', ['user_id' => $user->id]);
-                $patient = $user->patient()->create([
+            if ($role === 'doctor') {
+                // Crear o buscar clínica
+                $clinic = Clinic::firstOrCreate(
+                    ['name' => $request->clinica],
+                    [
+                        'name' => $request->clinica,
+                        'address' => 'Por definir',
+                    ]
+                );
+
+                // Asignar rol de doctor
+                $user->assignRole('doctor');
+                Log::info('Doctor role assigned', ['user_id' => $user->id]);
+
+                // Crear perfil de doctor
+                Log::info('Creating doctor profile for user:', [
                     'user_id' => $user->id,
-                    'birth' => null,
-                    'gender' => null,
-                    'blood_type' => null,
-                    'emergency_contact_name' => null,
-                    'emergency_contact_phone' => null,
-                    'nss_number' => null,
+                    'clinic_id' => $clinic->id,
+                    'cedula' => $request->cedula
                 ]);
+                
+                $doctor = $user->doctor()->create([
+                    'user_id' => $user->id,
+                    'description' => $request->cedula,
+                    'license_number' => 'temp_' . time(),
+                    'profile_picture_url' => '',
+                    'is_active' => true,
+                ]);
+
+                // Asociar clínica al doctor
+                $doctor->clinics()->attach($clinic->id);
+                Log::info('Doctor profile created', ['doctor_id' => $doctor->id]);
             } else {
-                Log::info('Patient profile already exists for user:', ['user_id' => $user->id]);
+                // Asignar rol de paciente
+                $user->assignRole('patient');
+                Log::info('Patient role assigned', ['user_id' => $user->id]);
+
+                if (!$user->patient) {
+                    Log::info('Creating patient profile for user:', ['user_id' => $user->id]);
+                    $patient = $user->patient()->create([
+                        'user_id' => $user->id,
+                        'birth' => null,
+                        'gender' => null,
+                        'blood_type' => null,
+                        'emergency_contact_name' => null,
+                        'emergency_contact_phone' => null,
+                        'nss_number' => null,
+                    ]);
+                    Log::info('Patient profile created', ['patient_id' => $patient->id]);
+                } else {
+                    Log::info('Patient profile already exists for user:', ['user_id' => $user->id]);
+                }
             }
+
+            event(new Registered($user));
+
+            Auth::login($user);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            $userRole = $user->roles->first()->name ?? 'patient';
+
+            Log::info('User registration completed successfully', ['user_id' => $user->id, 'role' => $userRole]);
+
+            return response()->json([
+                'message' => 'Usuario registrado exitosamente',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at,
+                ],
+                'token' => $token,
+                'role' => $userRole,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Error during user registration', [
+                'error' => $e->getMessage(),
+                'email' => $request->email ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error en el registro del usuario',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        $userRole = $user->roles->first()->name ?? 'patient';
-
-        return response()->json([
-            'message' => 'Usuario registrado exitosamente',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-            ],
-            'token' => $token,
-            'role' => $userRole,
-        ], 201);
     }
 }

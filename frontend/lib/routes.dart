@@ -1,4 +1,5 @@
 import 'package:frontend/screens/busqueda/busqueda_screen.dart';
+import 'package:frontend/screens/busqueda/agendar_screen.dart';
 import 'package:frontend/screens/patron/work_pattern_screen.dart';
 import 'package:frontend/screens/historial/historial_medico_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -47,6 +48,13 @@ final router = GoRouter(
     GoRoute(
       path: '/busqueda',
       builder: (context, state) => const BusquedaScreen(),
+    ),
+    GoRoute(
+      path: '/agendar/:doctorId',
+      builder: (context, state) {
+        final doctorId = int.parse(state.pathParameters['doctorId'] ?? '0');
+        return AgendarScreen(doctorId: doctorId);
+      },
     ),
     GoRoute(
       path: '/perfil/edit',
