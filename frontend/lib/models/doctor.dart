@@ -45,6 +45,18 @@ class Doctor {
   @JsonKey(name: 'license_number')
   final String? licenseNumber;
 
+  @JsonKey(name: 'profile_picture_url')
+  final String? profilePictureUrl;
+
+  @JsonKey(name: 'is_active')
+  final int? isActive;
+
+  @JsonKey(name: 'created_at')
+  final DateTime? createdAt;
+
+  @JsonKey(name: 'updated_at')
+  final DateTime? updatedAt;
+
   /// Creates a Doctor instance.
   const Doctor({
     this.id,
@@ -57,11 +69,14 @@ class Doctor {
     this.availableSchedules,
     this.description,
     this.licenseNumber,
+    this.profilePictureUrl,
+    this.isActive,
+    this.createdAt,
+    this.updatedAt,
   });
 
   /// Creates a Doctor instance from a JSON map.
-  factory Doctor.fromJson(Map<String, dynamic> json) =>
-    _$DoctorFromJson(json);
+  factory Doctor.fromJson(Map<String, dynamic> json) => _$DoctorFromJson(json);
 
   /// Converts this Doctor instance to a JSON map.
   Map<String, dynamic> toJson() => _$DoctorToJson(this);

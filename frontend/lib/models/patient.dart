@@ -12,7 +12,7 @@ class Patient {
   final int userId;
 
   @JsonKey(name: 'birth', fromJson: _dateFromJson, toJson: _dateToJson)
-  final DateTime birth;
+  final DateTime? birth;
 
   @JsonKey(name: 'gender')
   final String? gender;
@@ -36,7 +36,7 @@ class Patient {
   )
   final DateTime? deletedAt;
 
-  // Relación con User
+  // Relação com User
   @JsonKey(name: 'user')
   final User? user;
 
@@ -46,7 +46,7 @@ class Patient {
   Patient({
     this.id,
     required this.userId,
-    required this.birth,
+    this.birth,
     this.gender,
     this.bloodType,
     this.emergencyContactName,
@@ -58,8 +58,9 @@ class Patient {
   });
 
   // Métodos para conversión de fechas
-  static DateTime _dateFromJson(String date) => DateTime.parse(date);
-  static String _dateToJson(DateTime date) => date.toIso8601String();
+  static DateTime? _dateFromJson(String? date) =>
+      date != null ? DateTime.parse(date) : null;
+  static String? _dateToJson(DateTime? date) => date?.toIso8601String();
 
   static DateTime? _nullableDateFromJson(String? date) =>
       date != null ? DateTime.parse(date) : null;

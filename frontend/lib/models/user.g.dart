@@ -22,7 +22,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
           ? null
           : Patient.fromJson(json['patient'] as Map<String, dynamic>),
   specialties:
-      (json['specialtys'] as List<dynamic>?)
+      (json['specialties'] as List<dynamic>?)
           ?.map((e) => Specialty.fromJson(e as Map<String, dynamic>))
           .toList(),
   clinics:
@@ -38,6 +38,6 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'phone': instance.phone,
   'doctor': instance.doctor?.toJson(),
   'patient': instance.patient?.toJson(),
-  'specialtys': instance.specialties?.map((e) => e.toJson()).toList(),
+  'specialties': instance.specialties?.map((e) => e.toJson()).toList(),
   'clinics': instance.clinics?.map((e) => e.toJson()).toList(),
 };

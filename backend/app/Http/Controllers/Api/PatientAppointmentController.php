@@ -2,151 +2,152 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Appointment;
-use App\Http\Resources\AppointmentResource;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
 use App\Enums\AppointmentStatus;
+use App\Models\Appointment;
+use App\Models\Patient;
+use Illuminate\Http\Request;
+use App\Models\AvailableSchedule;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class PatientAppointmentController extends Controller
 {
-    /**
-     * Mostrar citas del paciente autenticado con filtros.
-     */
     public function index(Request $request)
     {
-        $patient = $request->user();
+        $user = $request->user();
+        
+        $patient = Patient::where('user_id', $user->id)->first();
 
-        $filters = [
-            'status'        => $request->input('status'),
-            'doctor_id'     => $request->input('doctor_id'),
-            'specialty_id'  => $request->input('specialty_id'),
-            'from_date'     => $request->input('from_date'),
-            'to_date'       => $request->input('to_date'),
-        ];
+        if (!$patient) {
+            return response()->json([
+                'message' => 'Paciente no encontrado.',
+                'status' => 'error'
+            ], 404);
+        }
 
-        $perPage = $request->input('per_page', 10);
+        $query = Appointment::where('patient_id', $patient->id)
+            ->filterByStatus($request->query('status'))
+            ->filterByDoctor($request->query('doctor_id'))
+            ->filterBySpecialty($request->query('specialty_id'))
+            ->filterByDateRange($request->query('from_date'), $request->query('to_date'))
+            ->with(['doctor.user', 'doctor.specialties', 'availableSchedule.clinic', 'patient.user']);
 
-        $appointments = Appointment::where('patient_id', $patient->id)
-            ->filterByStatus($filters['status'])
-            ->filterByDoctor($filters['doctor_id'])
-            ->filterBySpecialty($filters['specialty_id'])
-            ->filterByDateRange($filters['from_date'], $filters['to_date'])
-            ->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user'])
-            ->paginate($perPage);
+        $perPage = $request->get('per_page', 10);
+        $appointments = $query->paginate($perPage);
 
         return response()->json([
-            'message' => 'Citas obtenidas correctamente',
-            'data' => AppointmentResource::collection($appointments),
-            'pagination' => [
-                'total' => $appointments->total(),
-                'per_page' => $appointments->perPage(),
-                'current_page' => $appointments->currentPage(),
-                'last_page' => $appointments->lastPage(),
-            ]
+            'message' => 'Citas obtenidas correctamente.',
+            'data' => $appointments,
         ]);
     }
 
     /**
-     * Crear una nueva cita para el paciente autenticado.
+     * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'available_schedule_id' => 'required|exists:available_schedules,id',
-            'appointment_date'      => 'required|date',
         ]);
 
-        $patient = $request->user();
+        $availableSchedule = AvailableSchedule::find($request->available_schedule_id);
 
-        $appointment = Appointment::create([
-            'patient_id'             => $patient->id,
-            'doctor_id'              => null, // se obtiene mediante availableSchedule
-            'available_schedule_id'  => $validated['available_schedule_id'],
-            'appointment_date'       => $validated['appointment_date'],
-            'status'                 => AppointmentStatus::Pendiente->value,
-        ]);
+        if (!$availableSchedule || !$availableSchedule->available) {
+            return response()->json(['message' => 'El horario seleccionado no está disponible.'], 400);
+        }
+
+        $existingAppointment = Appointment::where('available_schedule_id', $availableSchedule->id)
+                                          ->whereIn('status', [AppointmentStatus::Pendiente->value, AppointmentStatus::Completado->value]) // Usar valores del Enum
+                                          ->exists();
+
+        if ($existingAppointment) {
+            return response()->json(['message' => 'El horario seleccionado ya está reservado.'], 400);
+        }
+
+        $patientUser = Auth::user();
+
+        // Obtener el patient_id desde la tabla patients usando user_id
+        $patient = Patient::where('user_id', $patientUser->id)->first();
+        if (!$patient) {
+            return response()->json(['message' => 'Paciente no encontrado.'], 404);
+        }
+
+        $appointment = new Appointment();
+        $appointment->patient_id = $patient->id;
+        $appointment->available_schedule_id = $availableSchedule->id;
+        $appointment->status = AppointmentStatus::Pendiente;
+
+        $appointment->save();
+
+        // Cambiar el estado del horario disponible a 'false'
+        $availableSchedule->update(['available' => false]);
 
         return response()->json([
-            'message' => 'Cita agendada correctamente',
-            'data' => $appointment,
+            'message' => 'Cita creada exitosamente.',
+            'appointment' => $appointment
         ], 201);
     }
 
     /**
-     * Obtener los detalles de una cita específica del paciente.
+     * Display the specified resource.
      */
-    public function show($id, Request $request)
+    public function show(Patient $patient)
     {
-        $patient = $request->user();
-
-        $appointment = Appointment::where('patient_id', $patient->id)
-            ->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user'])
-            ->findOrFail($id);
-
-        return response()->json([
-            'message' => 'Cita obtenida correctamente',
-            'data' => new AppointmentResource($appointment),
-        ]);
+        //
     }
 
-    /**
-     * Cancelar una cita con anticipación.
-     */
-    public function cancel($id, Request $request)
+
+public function update(Request $request, $appointment_id)
     {
-        $patient = $request->user();
+        Log::info("UPDATE CALLED with appointment_id: $appointment_id");
+        
+        $user = $request->user();
 
-        $appointment = Appointment::where('patient_id', $patient->id)->findOrFail($id);
-
-        // Validar que la cita esté todavía pendiente
-        if ($appointment->status !== AppointmentStatus::Pendiente->value) {
-            return response()->json([
-                'message' => 'Solo se pueden cancelar citas pendientes.',
-            ], 422);
+        $patient = Patient::where('user_id', $user->id)->first();
+        if (!$patient) {
+            return response()->json(['message' => 'Paciente no encontrado.'], 404);
         }
 
-        // Validar que la cancelación sea con anticipación (mínimo 2 horas antes)
-        $appointmentDate = Carbon::parse($appointment->appointment_date);
+        $appointment = Appointment::where('id', $appointment_id)
+            ->where('patient_id', $patient->id)
+            ->with('availableSchedule')
+            ->first();
+
+        if (!$appointment) {
+            return response()->json(['message' => 'Cita no encontrada o no pertenece al paciente.'], 404);
+        }
+
+        if ($appointment->status == AppointmentStatus::Cancelada) {
+            return response()->json(['message' => 'La cita ya está cancelada.'], 400);
+        }
+
+        $date = $appointment->availableSchedule->date;
+        $dateStr = $date instanceof Carbon ? $date->format('Y-m-d') : substr($date, 0, 10);
+        $timeStr = substr(trim((string) $appointment->availableSchedule->start_time), 0, 8);
+        Log::info("Cancelling: dateStr=$dateStr, timeStr=$timeStr");
+        $appointmentDateTime = Carbon::createFromFormat('Y-m-d H:i:s', "$dateStr $timeStr");
+        
         $now = Carbon::now();
+        $hoursUntilAppointment = $now->diffInHours($appointmentDateTime, false);
 
-        if ($appointmentDate->diffInHours($now, false) >= -2) {
+        if ($hoursUntilAppointment < 24) {
             return response()->json([
-                'message' => 'Las citas solo pueden cancelarse con al menos 2 horas de anticipación.',
-            ], 422);
+                'message' => 'No se puede cancelar la cita. Debe cancelarla al menos 24 horas antes de la fecha y hora programada.',
+            ], 400);
         }
 
-        // Marcar como cancelada
-        $appointment->update([
-            'status' => AppointmentStatus::Cancelada->value,
-        ]);
+        $appointment->status = AppointmentStatus::Cancelada;
+        $appointment->save();
+
+        $appointment->availableSchedule->update(['available' => true]);
 
         return response()->json([
             'message' => 'Cita cancelada correctamente.',
-            'data' => new AppointmentResource($appointment),
+            'data' => $appointment,
         ]);
     }
 
-    /**
-     * Eliminar una cita (solo si está cancelada o no asistió).
-     */
-    public function destroy($id, Request $request)
-    {
-        $patient = $request->user();
 
-        $appointment = Appointment::where('patient_id', $patient->id)->findOrFail($id);
-
-        if ($appointment->status === AppointmentStatus::Pendiente->value) {
-            return response()->json([
-                'message' => 'No puedes eliminar una cita pendiente. Primero cancélala.',
-            ], 422);
-        }
-
-        $appointment->delete();
-
-        return response()->json([
-            'message' => 'Cita eliminada correctamente.',
-        ]);
-    }
 }

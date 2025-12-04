@@ -9,11 +9,35 @@ use Carbon\Carbon;
 
 class AvailableSchedulesController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     
     public function index(Request $request)
     {
-        $filters = $request->only(['doctor_id', 'specialty_id', 'clinic_id', 'schedule_id', 'from_date', 'to_date']);
-        $schedules = AvailableSchedule::filter($filters);
+        $query = AvailableSchedule::query();
+
+        // Apply filters
+        if ($request->has('doctor_id')) {
+            $query->where('doctor_id', $request->doctor_id);
+        }
+
+        if ($request->has('clinic_id')) {
+            $query->where('clinic_id', $request->clinic_id);
+        }
+
+        if ($request->has('from_date')) {
+            $query->where('date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date')) {
+            $query->where('date', '<=', $request->to_date);
+        }
+
+        $schedules = $query->where('available', true)
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
 
         return response()->json([
             'count' => $schedules->count(),

@@ -175,7 +175,8 @@ class WorkPatternService {
 
       final jsonData = jsonDecode(response.body);
 
-      if (response.statusCode != 200) {
+      // Accept both 200 and 201 status codes
+      if (response.statusCode != 200 && response.statusCode != 201) {
         print('Error al generar horarios: ${jsonData['message']}');
         return ApiResponse(
           success: false,

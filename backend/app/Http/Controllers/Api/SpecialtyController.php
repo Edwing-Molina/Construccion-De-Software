@@ -1,67 +1,62 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\SpecialtyResource;
 use App\Models\Specialty;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class SpecialtyController extends Controller
+class SpecialtyController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        $allSpecialties = Specialty::orderedByName()->get();
+        $specialty = Specialty::all();
 
-        return $this->successResponse(
-            data: SpecialtyResource::collection($allSpecialties)
-        );
+        return response()->json([
+            'data' => $specialty
+        ]);
     }
 
-    public function show(Specialty $specialty): JsonResponse
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
     {
-        return $this->successResponse(
-            data: new SpecialtyResource($specialty)
-        );
+        //
     }
 
-    public function search(Request $request): JsonResponse
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'search' => ['required', 'string', 'min:1', 'max:255'],
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Specialty $specialty)
+    {
+        return response()->json($specialty);
+    }
+
+
+    public function search(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string',
         ]);
 
-        $searchTerm = $validatedData['search'];
-        $matchingSpecialties = Specialty::filterByName($searchTerm)
-            ->orderedByName()
-            ->get();
+        $specialty = Specialty::where('name', 'like', '%' . $request->search . '%')->get();
 
-        if ($matchingSpecialties->isEmpty()) {
-            return $this->notFoundResponse(
-                message: 'No se encontraron especialidades con ese criterio.'
-            );
+        if ($specialty->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron especialidades'], 404);
         }
 
-        return $this->successResponse(
-            data: SpecialtyResource::collection($matchingSpecialties)
-        );
-    }
-
-    private function successResponse($data): JsonResponse
-    {
-        return response()->json([
-            'data' => $data,
-        ]);
-    }
-
-    private function notFoundResponse(string $message): JsonResponse
-    {
-        return response()->json([
-            'message' => $message,
-            'data' => [],
-        ], 404);
+        return response()->json(['data' => $specialty]);
     }
 }

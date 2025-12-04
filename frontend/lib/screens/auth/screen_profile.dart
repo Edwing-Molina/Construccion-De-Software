@@ -36,28 +36,31 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
       setState(() {
         _usuario = response.data;
 
-        final userJson = _usuario?.toJson();
-        final specialtyList = userJson?['specialtys'] as List?;
-
-        if (specialtyList != null) {
-          _specialties =
-              specialtyList.map((e) => Specialty.fromJson(e)).toList();
+        // Load specialties from the User model (already parsed by json_serializable)
+        if (_usuario?.specialties != null) {
+          _specialties = List<Specialty>.from(_usuario!.specialties!);
         }
 
-        final clinicList = userJson?['clinics'] as List?;
-        if (clinicList != null) {
-          _clinics = clinicList.map((e) => ClinicInfo.fromJson(e)).toList();
+        // Load clinics from the User model
+        if (_usuario?.clinics != null) {
+          _clinics =
+              _usuario!.clinics!.map((clinic) {
+                return ClinicInfo(
+                  id: clinic.id,
+                  name: clinic.name,
+                  address: clinic.address,
+                  officeNumber: clinic.officeNumber,
+                );
+              }).toList();
         }
 
         final doctor = _usuario?.doctor;
         debugPrint('Doctor description: ${doctor?.description}');
         debugPrint('Doctor license: ${doctor?.licenseNumber}');
         debugPrint(
-          'Especialidades (specialtys): ${_specialties.map((s) => s.name).toList()}',
+          'Especialidades: ${_specialties.map((s) => s.name).toList()}',
         );
-        debugPrint(
-          'Clínicas: ${doctor?.clinics?.map((c) => c.clinic?.name).toList()}',
-        );
+        debugPrint('Clínicas: ${_clinics.map((c) => c.name).toList()}');
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,11 +184,11 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
                 ],
 
                 if (doctor != null) ...[
-                  _buildSectionTitle('Información del Doctor'),
+                  _buildSectionTitle('Descripción del Doctor'),
 
                   if (doctor.description != null &&
                       doctor.description!.isNotEmpty)
-                    _buildDetailRow('Descripción', doctor.description!),
+                    _buildDetailRow('Cédula Profesional', doctor.description!),
 
                   _buildDetailRow(
                     'Especialidades',
@@ -194,7 +197,6 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
                         : 'No asignadas',
                   ),
 
-                  // Mostrar clínicas con consultorios
                   ..._buildClinicInfo(),
                 ],
 
@@ -228,8 +230,8 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -239,12 +241,10 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
               fontSize: 16,
             ),
           ),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: AppColors.uadyBlue, fontSize: 16),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(color: AppColors.uadyBlue, fontSize: 16),
           ),
         ],
       ),

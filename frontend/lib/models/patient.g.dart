@@ -9,7 +9,7 @@ part of 'patient.dart';
 Patient _$PatientFromJson(Map<String, dynamic> json) => Patient(
   id: (json['id'] as num?)?.toInt(),
   userId: (json['user_id'] as num).toInt(),
-  birth: Patient._dateFromJson(json['birth'] as String),
+  birth: Patient._dateFromJson(json['birth'] as String?),
   gender: json['gender'] as String?,
   bloodType: json['blood_type'] as String?,
   emergencyContactName: json['emergency_contact_name'] as String?,

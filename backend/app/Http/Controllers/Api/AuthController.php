@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api; 
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Controllers\Controller; 
+use App\Models\User; 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Hash; 
+use Illuminate\Validation\ValidationException; 
 use Illuminate\Http\JsonResponse;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
     /**
-     * Maneja el login para la aplicación móvil .
+     * Maneja el login para la aplicación móvil y emite un token de API.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
@@ -26,10 +27,10 @@ class AuthController extends Controller
             'device_name' => ['required', 'string', 'max:255'],
         ]);
 
-
+        
         $user = User::where('email', $request->email)->first();
 
-
+        
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales proporcionadas son incorrectas.'],
@@ -53,8 +54,12 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $accessToken = $request->user()->currentAccessToken();
 
+    if ($accessToken instanceof PersonalAccessToken) {
+        $accessToken->delete();
+    }
+ 
         return response()->json(['message' => 'Cierre de sesión exitoso.']);
     }
 

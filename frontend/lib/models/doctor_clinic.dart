@@ -14,13 +14,13 @@ class DoctorClinic {
   final String address;
 
   @JsonKey(name: 'office_number')
-  final String officeNumber;
+  final String? officeNumber;
 
   DoctorClinic({
     required this.id,
     required this.name,
     required this.address,
-    required this.officeNumber,
+    this.officeNumber,
   });
 
   factory DoctorClinic.fromJson(Map<String, dynamic> json) =>

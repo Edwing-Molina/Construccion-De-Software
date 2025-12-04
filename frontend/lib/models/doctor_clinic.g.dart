@@ -10,7 +10,7 @@ DoctorClinic _$DoctorClinicFromJson(Map<String, dynamic> json) => DoctorClinic(
   id: (json['id'] as num).toInt(),
   name: json['name'] as String,
   address: json['address'] as String,
-  officeNumber: json['office_number'] as String,
+  officeNumber: json['office_number'] as String?,
 );
 
 Map<String, dynamic> _$DoctorClinicToJson(DoctorClinic instance) =>

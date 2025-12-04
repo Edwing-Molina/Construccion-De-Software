@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 final class AvailableSchedule extends Model
 {
@@ -15,6 +16,7 @@ final class AvailableSchedule extends Model
 
     protected $fillable = [
         'doctor_id',
+        'clinic_id', 
         'date',
         'start_time',
         'end_time',
@@ -30,6 +32,11 @@ final class AvailableSchedule extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
+    }
+
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
     }
 
     public function appointments(): HasMany
@@ -57,5 +64,93 @@ final class AvailableSchedule extends Model
     {
         $scheduleDateTime = \Carbon\Carbon::parse($this->date . ' ' . $this->start_time);
         return $scheduleDateTime->isFuture();
+    }
+
+    /**
+     * Genera horarios disponibles basados en los patrones de trabajo del doctor
+     */
+    public static function generateSchedules(Carbon $startDate, Carbon $endDate, int $doctorId)
+    {
+        $doctor = Doctor::find($doctorId);
+        
+        if (!$doctor) {
+            throw new \Exception('Doctor no encontrado');
+        }
+
+        $schedules = [];
+        $currentDate = $startDate->copy();
+
+        while ($currentDate->lte($endDate)) {
+            // Obtener los patrones de trabajo para este día de la semana
+            $dayName = $currentDate->format('l'); // 'Monday', 'Tuesday', etc.
+            
+            $workPatterns = DoctorWorkPattern::where('doctor_id', $doctorId)
+                ->where('is_active', true)
+                ->get()
+                ->filter(function ($pattern) use ($dayName, $currentDate) {
+                    // Comparar el día de la semana
+                    $patternDay = $pattern->day_of_week->value ?? $pattern->day_of_week;
+                    
+                    if ($patternDay !== $dayName) {
+                        return false;
+                    }
+
+                    // Verificar si la fecha está dentro del rango efectivo
+                    if ($pattern->start_date_effective && $currentDate->lt($pattern->start_date_effective)) {
+                        return false;
+                    }
+
+                    if ($pattern->end_date_effective && $currentDate->gt($pattern->end_date_effective)) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+            foreach ($workPatterns as $pattern) {
+                // Obtener los tiempos del patrón
+                $startTimeStr = is_string($pattern->start_time_pattern) 
+                    ? $pattern->start_time_pattern 
+                    : $pattern->start_time_pattern->format('H:i:s');
+                    
+                $endTimeStr = is_string($pattern->end_time_pattern) 
+                    ? $pattern->end_time_pattern 
+                    : $pattern->end_time_pattern->format('H:i:s');
+
+                // Generar slots basados en el patrón
+                $startTime = Carbon::createFromFormat('H:i:s', $startTimeStr);
+                $endTime = Carbon::createFromFormat('H:i:s', $endTimeStr);
+                $slotDuration = $pattern->slot_duration_minutes;
+
+                $currentSlotStart = $startTime->copy();
+
+                while ($currentSlotStart->copy()->addMinutes($slotDuration)->lte($endTime)) {
+                    $currentSlotEnd = $currentSlotStart->copy()->addMinutes($slotDuration);
+
+                    try {
+                        $schedule = self::firstOrCreate([
+                            'doctor_id' => $doctorId,
+                            'clinic_id' => $pattern->clinic_id,
+                            'date' => $currentDate->toDateString(),
+                            'start_time' => $currentSlotStart->format('H:i:s'),
+                            'end_time' => $currentSlotEnd->format('H:i:s'),
+                        ], [
+                            'available' => true,
+                        ]);
+
+                        $schedules[] = $schedule;
+                    } catch (\Exception $e) {
+                        
+                    
+                    }
+
+                    $currentSlotStart = $currentSlotEnd;
+                }
+            }
+
+            $currentDate->addDay();
+        }
+
+        return $schedules;
     }
 }

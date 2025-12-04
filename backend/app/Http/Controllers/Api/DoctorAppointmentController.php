@@ -1,19 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Api;
 
-use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\AppointmentResource;
+use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\Doctor;
+use App\Enums\AppointmentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+
 
 class DoctorAppointmentController extends Controller
 {
+    use AuthorizesRequests;
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -21,7 +28,7 @@ class DoctorAppointmentController extends Controller
         if ($user->hasRole('doctor')) {
             $doctorId = $user->doctor->id ?? null;
 
-            if (! $doctorId) {
+            if (!$doctorId) {
                 return response()->json(['message' => 'No autorizado.'], 403);
             }
         } else {
@@ -45,14 +52,14 @@ class DoctorAppointmentController extends Controller
             });
         }
 
-        $query->with(['availableSchedule.doctor.user', 'availableSchedule.doctor.specialties', 'patient.user']);
+        $query->with(['availableSchedule', 'patient.user']);
 
         $appointments = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'count' => $appointments->count(),
-            'data' => AppointmentResource::collection($appointments),
-        ], 200);
+            'data' => $appointments,
+        ]);
     }
 
     /**
@@ -60,7 +67,7 @@ class DoctorAppointmentController extends Controller
      */
     public function store(Request $request)
     {
-    
+        
     }
 
     /**
@@ -74,11 +81,11 @@ class DoctorAppointmentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, int $appointment_id)
+    public function update(Request $request, $appointment_id)
     {
         $doctor = Auth::user()->doctor;
 
-        if (! $doctor) {
+        if (!$doctor) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
@@ -88,21 +95,21 @@ class DoctorAppointmentController extends Controller
             })
             ->first();
 
-        if (! $appointment) {
+        if (!$appointment) {
             return response()->json(['message' => 'Cita no encontrada o no pertenece al doctor.'], 404);
         }
 
-        if ($appointment->status === AppointmentStatus::Completado->value) {
+        if ($appointment->status === AppointmentStatus::Completado) {
             return response()->json(['message' => 'La cita ya está completada.'], 400);
         }
 
-        $appointment->status = AppointmentStatus::Completado->value;
+        $appointment->status = AppointmentStatus::Completado;
         $appointment->save();
 
         return response()->json([
             'message' => 'Cita marcada como completada.',
-            'appointment' => $appointment,
-        ], 200);
+            'appointment' => $appointment
+        ]);
     }
 
     /**
@@ -110,6 +117,7 @@ class DoctorAppointmentController extends Controller
      */
     public function destroy(Request $appointment)
     {
-    
+
     }
+        //
 }

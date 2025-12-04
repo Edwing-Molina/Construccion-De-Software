@@ -8,12 +8,12 @@ part of 'appointment.dart';
 
 Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
   id: (json['id'] as num?)?.toInt(),
-  patientId: (json['patient_id'] as num).toInt(),
+  patientId: (json['patient_id'] as num?)?.toInt(),
   appointmentDate:
       json['appointment_date'] == null
           ? null
           : DateTime.parse(json['appointment_date'] as String),
-  status: json['status'] as String,
+  status: json['status'] as String?,
   patient:
       json['patient'] == null
           ? null

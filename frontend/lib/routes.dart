@@ -6,6 +6,7 @@ import 'services/services.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/complete_profile_screen.dart';
+import 'screens/auth/complete_doctor_profile_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/cita/screen_citas.dart';
 import 'screens/auth/screen_profile.dart';
@@ -36,6 +37,10 @@ final router = GoRouter(
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfileScreen(),
+    ),
+    GoRoute(
+      path: '/complete-doctor-profile',
+      builder: (context, state) => const CompleteDoctorProfileScreen(),
     ),
     GoRoute(path: '/citas', builder: (context, state) => const ScreenCitas()),
     GoRoute(path: '/perfil', builder: (context, state) => const ScreenPerfil()),

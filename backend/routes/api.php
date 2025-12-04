@@ -31,7 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas para usuarios con el rol de pacientes
     Route::middleware('role:patient')->group(function() {
 
-        Route::apiResource('patient-appointments', PatientAppointmentController::class);
+        Route::get('/patient-appointments', [PatientAppointmentController::class, 'index']);
+        Route::post('/patient-appointments', [PatientAppointmentController::class, 'store']);
+        Route::put('/patient-appointments/{appointment_id}', [PatientAppointmentController::class, 'update']);
 
         
         Route::prefix('patient-available-schedules')->group(function () {

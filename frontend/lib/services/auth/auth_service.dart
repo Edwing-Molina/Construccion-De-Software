@@ -99,20 +99,36 @@ class AuthService extends BaseService {
     required String passwordConfirmation,
     String? telefono,
     String? cedula,
+    String? role,
+    String? clinica,
   }) async {
     try {
+      final url = '${BaseService.baseUrl}/register';
+
+      AppEnvironment.printDebug('=== REGISTER ATTEMPT ===');
+      AppEnvironment.printDebug('Full URL: $url');
+      AppEnvironment.printDebug('Base URL: ${BaseService.baseUrl}');
+      AppEnvironment.printDebug('Email: $email');
+      AppEnvironment.printDebug('Name: $nombre');
+      AppEnvironment.printDebug('Role: $role');
+
+      final body = {
+        'name': nombre,
+        'phone': telefono,
+        'email': email,
+        'password': password,
+        "password_confirmation": passwordConfirmation,
+        if (role != null) 'role': role,
+        if (cedula != null) 'cedula': cedula,
+        if (clinica != null) 'clinica': clinica,
+      };
+
+      final jsonBody = json.encode(body);
+      AppEnvironment.printDebug('Request body: $jsonBody');
+      AppEnvironment.printDebug('Headers: $headers');
+
       final response = await http
-          .post(
-            Uri.parse('${BaseService.baseUrl}/register'),
-            headers: headers,
-            body: json.encode({
-              'name': nombre,
-              'phone': telefono,
-              'email': email,
-              'password': password,
-              "password_confirmation": passwordConfirmation,
-            }),
-          )
+          .post(Uri.parse(url), headers: headers, body: jsonBody)
           .timeout(
             const Duration(seconds: 30),
             onTimeout: () {
@@ -122,6 +138,9 @@ class AuthService extends BaseService {
             },
           );
 
+      AppEnvironment.printDebug('Response status: ${response.statusCode}');
+      AppEnvironment.printDebug('Response body: ${response.body}');
+
       final apiResponse = handleResponse<Map<String, dynamic>>(
         response,
         (data) => data,
@@ -129,13 +148,39 @@ class AuthService extends BaseService {
 
       final user = User.fromJson(apiResponse['user']);
       final token = apiResponse['token'];
-      final role = apiResponse['role'];
+      final userRole = apiResponse['role'];
 
-      await _saveAuthData(token, user, role);
+      await _saveAuthData(token, user, userRole);
 
       return user;
     } catch (e) {
-      throw Exception('Error al registrar usuario: ${e.toString()}');
+      AppEnvironment.printDebug('Error detallado en registro: $e');
+
+      // Manejo específico de errores
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        throw Exception(
+          'No se puede conectar al servidor. Verifica que Laragon esté ejecutándose.',
+        );
+      } else if (e.toString().contains('Tiempo de espera')) {
+        throw Exception(
+          'Tiempo de espera agotado. El servidor está tardando demasiado en responder.',
+        );
+      } else if (e.toString().contains('400') ||
+          e.toString().contains('validation')) {
+        throw Exception(
+          'Datos de registro inválidos o incompletos. ${e.toString()}',
+        );
+      } else if (e.toString().contains('409') ||
+          e.toString().contains('already')) {
+        throw Exception('El email ya está registrado');
+      } else if (e.toString().contains('500')) {
+        throw Exception(
+          'Error en el servidor. Verifica la configuración del backend.',
+        );
+      } else {
+        throw Exception('Error al registrar usuario: ${e.toString()}');
+      }
     }
   }
 

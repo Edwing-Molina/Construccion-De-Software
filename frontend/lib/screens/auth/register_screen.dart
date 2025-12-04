@@ -19,9 +19,12 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cedulaController = TextEditingController();
+  final _clinicaController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String _selectedRole = 'patient'; // 'patient' o 'doctor'
 
   @override
   void dispose() {
@@ -31,11 +34,24 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     _cedulaController.dispose();
+    _clinicaController.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Validaciones específicas para doctores
+    if (_selectedRole == 'doctor') {
+      if (!_cedulaController.text.trim().startsWith('a')) {
+        _showErrorSnackBar('La cédula debe comenzar con la letra "a"');
+        return;
+      }
+      if (_clinicaController.text.trim().isEmpty) {
+        _showErrorSnackBar('Por favor ingresa el nombre de la clínica');
+        return;
+      }
+    }
 
     setState(() {
       _isLoading = true;
@@ -56,10 +72,17 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
             _cedulaController.text.trim().isEmpty
                 ? null
                 : _cedulaController.text.trim(),
+        role: _selectedRole,
+        clinica:
+            _selectedRole == 'doctor' ? _clinicaController.text.trim() : null,
       );
 
       if (mounted) {
-        context.go('/complete-profile');
+        if (_selectedRole == 'doctor') {
+          context.go('/complete-doctor-profile');
+        } else {
+          context.go('/complete-profile');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -89,26 +112,34 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight:
-                    MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    MediaQuery.of(context).padding.bottom,
+          child: Stack(
+            children: [
+              // Logo fijo en la parte superior
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: MediaQuery.of(context).size.height * 0.20,
+                child: const LogoSection(),
               ),
-
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.20,
-                    child: const LogoSection(),
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.20,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.02,
+                      ),
+                      _buildFormContainer(),
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                  // Form container responsive
-                  Expanded(child: _buildFormContainer()),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -125,7 +156,7 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
         horizontal: isSmallScreen ? 20 : 40,
         vertical: 5,
       ),
-      padding: EdgeInsets.all(isSmallScreen ? 20 : 30),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -141,7 +172,7 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildFormTitle(),
-          SizedBox(height: isSmallScreen ? 20 : 30),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           _buildRegisterForm(),
         ],
       ),
@@ -165,26 +196,105 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
   Widget _buildRegisterForm() {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
-    final fieldSpacing = isSmallScreen ? 16.0 : 20.0;
+    final fieldSpacing = isSmallScreen ? 10.0 : 12.0;
 
     return Form(
       key: _formKey,
       child: Column(
         children: [
+          _buildRoleSelector(),
+          SizedBox(height: fieldSpacing),
           _buildNameField(),
           SizedBox(height: fieldSpacing),
           _buildEmailField(),
           SizedBox(height: fieldSpacing),
           _buildPhoneField(),
           SizedBox(height: fieldSpacing),
+          if (_selectedRole == 'doctor') ...[
+            _buildCedulaField(),
+            SizedBox(height: fieldSpacing),
+            _buildClinicaField(),
+            SizedBox(height: fieldSpacing),
+          ],
           _buildPasswordField(),
           SizedBox(height: fieldSpacing),
           _buildConfirmPasswordField(),
-          SizedBox(height: isSmallScreen ? 20 : 30),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           _buildRegisterButton(),
-          SizedBox(height: isSmallScreen ? 15 : 20),
+          SizedBox(height: isSmallScreen ? 10 : 12),
           _buildLoginLink(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Registrarse como:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.darkGray,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRoleButton(
+                label: 'Paciente',
+                value: 'patient',
+                isSelected: _selectedRole == 'patient',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildRoleButton(
+                label: 'Doctor',
+                value: 'doctor',
+                isSelected: _selectedRole == 'doctor',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleButton({
+    required String label,
+    required String value,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedRole = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.uadyBlue : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppColors.uadyBlue : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.darkGray,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -233,6 +343,37 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
         }
         if (!RegExp(r'^\+?[0-9]{10,15}$').hasMatch(value)) {
           return 'Por favor ingresa un número válido';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildCedulaField() {
+    return CustomTextField(
+      controller: _cedulaController,
+      hintText: 'Cédula profesional (ej: a123456)',
+      icon: Icons.card_giftcard_outlined,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingresa tu cédula profesional';
+        }
+        if (!value.toLowerCase().startsWith('a')) {
+          return 'La cédula debe comenzar con la letra "a"';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildClinicaField() {
+    return CustomTextField(
+      controller: _clinicaController,
+      hintText: 'Nombre de la clínica',
+      icon: Icons.local_hospital_outlined,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingresa el nombre de la clínica';
         }
         return null;
       },

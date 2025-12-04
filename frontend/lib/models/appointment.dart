@@ -15,16 +15,16 @@ class Appointment {
   final int? id;
 
   @JsonKey(name: 'patient_id')
-  final int patientId;
+  final int? patientId;
 
   @JsonKey(name: 'appointment_date')
   final DateTime? appointmentDate;
 
   @JsonKey(name: 'status')
-  final String status;
+  final String? status;
 
   @JsonKey(name: 'patient')
-  final Patient? patient; // Patient model not yet defined in project
+  final Patient? patient;
 
   @JsonKey(name: 'doctor')
   final Doctor? doctor;
@@ -35,9 +35,9 @@ class Appointment {
   /// Creates an Appointment instance.
   const Appointment({
     this.id,
-    required this.patientId,
-    required this.appointmentDate,
-    required this.status,
+    this.patientId,
+    this.appointmentDate,
+    this.status,
     this.patient,
     this.doctor,
     this.availableSchedule,

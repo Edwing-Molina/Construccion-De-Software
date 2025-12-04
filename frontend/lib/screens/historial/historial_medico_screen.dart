@@ -120,10 +120,10 @@ class _HistorialMedicoScreenState extends State<HistorialMedicoScreen> {
                         ...historialItems.map(
                           (item) => HistorialCard(
                             fecha:
-                                item.appointmentDate != null
+                                item.availableSchedule?.date != null
                                     ? DateFormat(
                                       'dd/MM/yyyy',
-                                    ).format(item.appointmentDate!)
+                                    ).format(item.availableSchedule!.date)
                                     : 'Fecha no disponible',
                             doctor:
                                 item.doctor?.user?.name ??
@@ -132,7 +132,7 @@ class _HistorialMedicoScreenState extends State<HistorialMedicoScreen> {
                                 item.doctor?.specialties?.isNotEmpty == true
                                     ? item.doctor!.specialties!.first.name
                                     : 'Especialidad no especificada',
-                            estado: item.status,
+                            estado: item.status ?? 'Desconocido',
                             clinica:
                                 item.availableSchedule?.clinic?.name ??
                                 'Clínica no especificada',

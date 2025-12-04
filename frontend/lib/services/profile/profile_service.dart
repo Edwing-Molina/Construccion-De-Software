@@ -63,17 +63,36 @@ class ProfileService extends BaseService {
 
       final url = Uri.parse('${BaseService.baseUrl}/me');
 
+      print('[ProfileService] Fetching profile from: $url');
+      print('[ProfileService] Headers: ${headersWithAuth(token)}');
+
       final response = await http.get(url, headers: headersWithAuth(token));
 
-      return handleResponse(
-        response,
-        (data) => ApiResponse<User>(
+      print('[ProfileService] Response status: ${response.statusCode}');
+      print('[ProfileService] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print('[ProfileService] Parsed response: $responseData');
+
+        // Extract user data from the response
+        final userData = responseData['data'] ?? responseData;
+        print('[ProfileService] User data to parse: $userData');
+
+        final user = User.fromJson(userData);
+        print('[ProfileService] Successfully parsed user: ${user.name}');
+
+        return ApiResponse<User>(
           success: true,
-          data: User.fromJson(data['data'] ?? data),
-          message: data['message'] ?? 'Perfil obtenido exitosamente',
-        ),
-      );
+          data: user,
+          message: responseData['message'] ?? 'Perfil obtenido exitosamente',
+        );
+      } else {
+        print('[ProfileService] Error status: ${response.statusCode}');
+        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+      }
     } catch (e) {
+      print('[ProfileService] Exception in getProfile: $e');
       throw Exception('Error al obtener perfil: $e');
     }
   }
@@ -99,11 +118,15 @@ class ProfileService extends BaseService {
       'nss_number': nssNumber,
     };
 
-    final Map<String, dynamic> profile = {
-      'name': name,
-      'phone': phone,
-      'patient': patientData,
-    };
+    final Map<String, dynamic> profile = {'patient': patientData};
+
+    // Only add name and phone if they are provided
+    if (name != null && name.isNotEmpty) {
+      profile['name'] = name;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      profile['phone'] = phone;
+    }
 
     return profile;
   }
@@ -122,11 +145,17 @@ class ProfileService extends BaseService {
     };
 
     final Map<String, dynamic> profile = {
-      'name': name,
-      'phone': phone,
       'doctor': doctorData,
       'specialty_ids': specialtyIds, // Mover specialty_ids al nivel raíz
     };
+
+    // Only add name and phone if they are provided
+    if (name != null && name.isNotEmpty) {
+      profile['name'] = name;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      profile['phone'] = phone;
+    }
 
     return profile;
   }

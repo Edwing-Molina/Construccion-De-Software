@@ -40,7 +40,7 @@ class User {
   final Patient? patient; // Patient model not yet defined in project
 
   // Datos adicionales para doctores (vienen directamente en la respuesta)
-  @JsonKey(name: 'specialtys')
+  @JsonKey(name: 'specialties')
   final List<Specialty>? specialties;
 
   @JsonKey(name: 'clinics')

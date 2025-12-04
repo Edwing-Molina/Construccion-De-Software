@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Clinic;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,13 +23,22 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
+        $role = $request->input('role', 'patient');
+        
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'phone' => ['required', 'string', 'max:20', 'unique:'.User::class],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ];
 
-        ]);
+        // Validaciones adicionales para doctores
+        if ($role === 'doctor') {
+            $rules['cedula'] = ['required', 'string', 'max:50', 'unique:doctors,description'];
+            $rules['clinica'] = ['required', 'string', 'max:255'];
+        }
+
+        $request->validate($rules);
 
         $user = User::create([
             'name' => $request->name,
@@ -37,24 +47,55 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->string('password')),
         ]);
 
-        $user->assignRole('patient');
+        if ($role === 'doctor') {
+            // Crear o buscar clínica
+            $clinic = Clinic::firstOrCreate(
+                ['name' => $request->clinica],
+                [
+                    'name' => $request->clinica,
+                    'address' => 'Por definir',
+                ]
+            );
 
-        if(!$user->patient){
-            Log::info('Creating patient profile for user:', ['user_id' => $user->id]);
-            $patient = $user->patient()->create([
-            'user_id' => $user->id,
-            'birth' => null,
-            'gender' => null,
-            'blood_type' => null,
-            'emergency_contact_name' => null,
-            'emergency_contact_phone' => null,
-            'nss_number' => null,
-        ]);
-        }else
-        {
-            Log::info('Patient profile already exists for user:', ['user_id' => $user->id]);
+            // Asignar rol de doctor
+            $user->assignRole('doctor');
+
+            // Crear perfil de doctor
+            Log::info('Creating doctor profile for user:', [
+                'user_id' => $user->id,
+                'clinic_id' => $clinic->id,
+                'cedula' => $request->cedula
+            ]);
+            
+            $doctor = $user->doctor()->create([
+                'user_id' => $user->id,
+                'description' => $request->cedula,
+                'license_number' => 'temp_' . time(),
+                'profile_picture_url' => '',
+                'is_active' => true,
+            ]);
+
+            // Asociar clínica al doctor
+            $doctor->clinics()->attach($clinic->id);
+        } else {
+            // Asignar rol de paciente
+            $user->assignRole('patient');
+
+            if (!$user->patient) {
+                Log::info('Creating patient profile for user:', ['user_id' => $user->id]);
+                $patient = $user->patient()->create([
+                    'user_id' => $user->id,
+                    'birth' => null,
+                    'gender' => null,
+                    'blood_type' => null,
+                    'emergency_contact_name' => null,
+                    'emergency_contact_phone' => null,
+                    'nss_number' => null,
+                ]);
+            } else {
+                Log::info('Patient profile already exists for user:', ['user_id' => $user->id]);
+            }
         }
-
 
         event(new Registered($user));
 
@@ -62,7 +103,7 @@ class RegisteredUserController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $role = $user->roles->first()->name ?? 'patient';
+        $userRole = $user->roles->first()->name ?? 'patient';
 
         return response()->json([
             'message' => 'Usuario registrado exitosamente',
@@ -75,7 +116,7 @@ class RegisteredUserController extends Controller
                 'updated_at' => $user->updated_at,
             ],
             'token' => $token,
-            'role' => $role,
+            'role' => $userRole,
         ], 201);
     }
 }

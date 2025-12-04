@@ -15,6 +15,10 @@ class Doctor extends Model
 
     protected $fillable = [
         'user_id',
+        'description',
+        'license_number',
+        'profile_picture_url',
+        'is_active',
     ];
 
     public function user()

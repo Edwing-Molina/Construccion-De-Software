@@ -27,8 +27,10 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _officeNumberController = TextEditingController();
-  final TextEditingController _emergencyNameController = TextEditingController();
-  final TextEditingController _emergencyPhoneController = TextEditingController();
+  final TextEditingController _emergencyNameController =
+      TextEditingController();
+  final TextEditingController _emergencyPhoneController =
+      TextEditingController();
   final TextEditingController _nssController = TextEditingController();
 
   // State fields.
@@ -111,22 +113,36 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
         final doctor = user.doctor!;
         _descriptionController.text = doctor.description ?? '';
 
-        final userJson = user.toJson();
-        final specialtyList = userJson['specialtys'] as List<dynamic>?;
-        if (specialtyList != null) {
+        if (kDebugMode) {
+          debugPrint('User object: ${user.toJson()}');
+          debugPrint('User specialties: ${user.specialties}');
+          debugPrint('User clinics: ${user.clinics}');
+        }
+
+        // Las especialidades ya están cargadas en el objeto user
+        if (user.specialties != null) {
           _specialties
             ..clear()
-            ..addAll(specialtyList.map((e) => Specialty.fromJson(e as Map<String, dynamic>)));
+            ..addAll(user.specialties!);
           _selectedSpecialtyIds
             ..clear()
             ..addAll(_specialties.map((s) => s.id));
         }
 
-        final clinicList = userJson['clinics'] as List<dynamic>?;
-        if (clinicList != null) {
+        // Las clínicas ya están cargadas en el objeto user
+        if (user.clinics != null && user.clinics!.isNotEmpty) {
           _clinics
             ..clear()
-            ..addAll(clinicList.map((e) => ClinicInfo.fromJson(e as Map<String, dynamic>)));
+            ..addAll(
+              user.clinics!.map(
+                (dc) => ClinicInfo(
+                  id: dc.id,
+                  name: dc.name,
+                  address: dc.address,
+                  officeNumber: dc.officeNumber,
+                ),
+              ),
+            );
         }
 
         if (_clinics.isNotEmpty) {
@@ -135,7 +151,9 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
         }
 
         if (kDebugMode) {
-          debugPrint('Doctor specialties: ${_specialties.map((s) => s.name).toList()}');
+          debugPrint(
+            'Doctor specialties: ${_specialties.map((s) => s.name).toList()}',
+          );
           debugPrint('Selected specialty ids: $_selectedSpecialtyIds');
           debugPrint('Clinics loaded: ${_clinics.map((c) => c.name).toList()}');
         }
@@ -143,8 +161,10 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
 
       if (user.patient != null) {
         final patient = user.patient!;
-        _selectedGender = _genders.contains(patient.gender) ? patient.gender : null;
-        _selectedBloodType = _bloodTypes.contains(patient.bloodType) ? patient.bloodType : null;
+        _selectedGender =
+            _genders.contains(patient.gender) ? patient.gender : null;
+        _selectedBloodType =
+            _bloodTypes.contains(patient.bloodType) ? patient.bloodType : null;
         _selectedBirthDate = patient.birth;
         _emergencyNameController.text = patient.emergencyContactName ?? '';
         _emergencyPhoneController.text = patient.emergencyContactPhone ?? '';
@@ -248,22 +268,26 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: _selectedSpecialtyIds.map<Widget>((specialtyId) {
-                  final specialty = _allSpecialties.firstWhere(
-                    (s) => s.id == specialtyId,
-                    orElse: () => Specialty(id: specialtyId, name: 'Unknown'),
-                  );
-                  return Chip(
-                    label: Text(specialty.name),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () {
-                      setState(() => _selectedSpecialtyIds.remove(specialtyId));
-                    },
-                    backgroundColor: AppColors.uadyBlue.withOpacity(0.1),
-                    deleteIconColor: AppColors.uadyBlue,
-                    labelStyle: const TextStyle(color: AppColors.uadyBlue),
-                  );
-                }).toList(),
+                children:
+                    _selectedSpecialtyIds.map<Widget>((specialtyId) {
+                      final specialty = _allSpecialties.firstWhere(
+                        (s) => s.id == specialtyId,
+                        orElse:
+                            () => Specialty(id: specialtyId, name: 'Unknown'),
+                      );
+                      return Chip(
+                        label: Text(specialty.name),
+                        deleteIcon: const Icon(Icons.close, size: 18),
+                        onDeleted: () {
+                          setState(
+                            () => _selectedSpecialtyIds.remove(specialtyId),
+                          );
+                        },
+                        backgroundColor: AppColors.uadyBlue.withOpacity(0.1),
+                        deleteIconColor: AppColors.uadyBlue,
+                        labelStyle: const TextStyle(color: AppColors.uadyBlue),
+                      );
+                    }).toList(),
               ),
             ),
           ExpansionTile(
@@ -272,7 +296,10 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
                   ? 'Seleccionar especialidades'
                   : 'Agregar más especialidades',
               style: TextStyle(
-                color: _selectedSpecialtyIds.isEmpty ? Colors.grey[600] : AppColors.uadyBlue,
+                color:
+                    _selectedSpecialtyIds.isEmpty
+                        ? Colors.grey[600]
+                        : AppColors.uadyBlue,
               ),
             ),
             children: <Widget>[
@@ -283,7 +310,9 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
                   itemCount: _allSpecialties.length,
                   itemBuilder: (context, index) {
                     final specialty = _allSpecialties[index];
-                    final isSelected = _selectedSpecialtyIds.contains(specialty.id);
+                    final isSelected = _selectedSpecialtyIds.contains(
+                      specialty.id,
+                    );
 
                     return CheckboxListTile(
                       title: Text(specialty.name),
@@ -318,9 +347,9 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
 
   void _showSnackBar(String message, {Color color = Colors.red}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -331,7 +360,8 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
           child: SingleChildScrollView(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
+                minHeight:
+                    MediaQuery.of(context).size.height -
                     MediaQuery.of(context).padding.top -
                     MediaQuery.of(context).padding.bottom,
               ),
@@ -378,7 +408,8 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
               hintText: 'Nombre',
               icon: Icons.person_outline,
               controller: _nameController,
-              validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+              validator:
+                  (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
             ),
             const SizedBox(height: 20),
             CustomTextField(
@@ -402,22 +433,37 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
                 controller: _descriptionController,
               ),
               const SizedBox(height: 20),
-              const Text('Especialidades', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Especialidades',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               _buildSpecialtySelector(),
               const SizedBox(height: 20),
-              const Text('Clínica', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Clínica',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _selectedClinicId,
-                items: _clinics
-                    .map((c) => DropdownMenuItem<String>(value: c.id.toString(), child: Text(c.name)))
-                    .toList(),
+                items:
+                    _clinics
+                        .map(
+                          (c) => DropdownMenuItem<String>(
+                            value: c.id.toString(),
+                            child: Text(c.name),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _selectedClinicId = v),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: AppColors.lightGray,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -425,48 +471,98 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
                 hintText: 'Número de Consultorio',
                 icon: Icons.door_front_door_outlined,
                 controller: _officeNumberController,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
             ],
             if (_usuario?.patient != null) ...<Widget>[
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
                 value: _selectedGender,
-                items: _genders.map((g) => DropdownMenuItem<String>(value: g, child: Text(g))).toList(),
+                items:
+                    _genders
+                        .map(
+                          (g) => DropdownMenuItem<String>(
+                            value: g,
+                            child: Text(g),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _selectedGender = v),
-                decoration: const InputDecoration(labelText: 'Género', filled: true, fillColor: AppColors.lightGray),
+                decoration: const InputDecoration(
+                  labelText: 'Género',
+                  filled: true,
+                  fillColor: AppColors.lightGray,
+                ),
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
                 value: _selectedBloodType,
-                items: _bloodTypes.map((b) => DropdownMenuItem<String>(value: b, child: Text(b))).toList(),
+                items:
+                    _bloodTypes
+                        .map(
+                          (b) => DropdownMenuItem<String>(
+                            value: b,
+                            child: Text(b),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _selectedBloodType = v),
-                decoration: const InputDecoration(labelText: 'Tipo de Sangre', filled: true, fillColor: AppColors.lightGray),
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de Sangre',
+                  filled: true,
+                  fillColor: AppColors.lightGray,
+                ),
               ),
               const SizedBox(height: 20),
               GestureDetector(
                 onTap: _pickBirthDate,
                 child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Fecha de nacimiento', filled: true, fillColor: AppColors.lightGray),
+                  decoration: const InputDecoration(
+                    labelText: 'Fecha de nacimiento',
+                    filled: true,
+                    fillColor: AppColors.lightGray,
+                  ),
                   child: Text(
-                    _selectedBirthDate != null ? DateFormat('dd/MM/yyyy').format(_selectedBirthDate!) : 'Selecciona una fecha',
+                    _selectedBirthDate != null
+                        ? DateFormat('dd/MM/yyyy').format(_selectedBirthDate!)
+                        : 'Selecciona una fecha',
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              CustomTextField(hintText: 'Contacto de Emergencia', icon: Icons.contact_phone, controller: _emergencyNameController),
+              CustomTextField(
+                hintText: 'Contacto de Emergencia',
+                icon: Icons.contact_phone,
+                controller: _emergencyNameController,
+              ),
               const SizedBox(height: 20),
-              CustomTextField(hintText: 'Teléfono de Emergencia', icon: Icons.phone_callback, controller: _emergencyPhoneController),
+              CustomTextField(
+                hintText: 'Teléfono de Emergencia',
+                icon: Icons.phone_callback,
+                controller: _emergencyPhoneController,
+              ),
               const SizedBox(height: 20),
-              CustomTextField(hintText: 'Número de Seguro Social', icon: Icons.health_and_safety, controller: _nssController),
+              CustomTextField(
+                hintText: 'Número de Seguro Social',
+                icon: Icons.health_and_safety,
+                controller: _nssController,
+              ),
             ],
             const SizedBox(height: 30),
-            CustomButton(text: 'Guardar Cambios', onPressed: _updateProfile, isLoading: _isLoading),
+            CustomButton(
+              text: 'Guardar Cambios',
+              onPressed: _updateProfile,
+              isLoading: _isLoading,
+            ),
             const SizedBox(height: 10),
             TextButton.icon(
               onPressed: () => context.go('/perfil'),
               icon: const Icon(Icons.arrow_back, color: AppColors.uadyBlue),
-              label: const Text('Regresar al Perfil', style: TextStyle(color: AppColors.uadyBlue)),
+              label: const Text(
+                'Regresar al Perfil',
+                style: TextStyle(color: AppColors.uadyBlue),
+              ),
             ),
           ],
         ),

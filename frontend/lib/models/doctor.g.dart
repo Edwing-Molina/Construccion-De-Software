@@ -35,6 +35,16 @@ Doctor _$DoctorFromJson(Map<String, dynamic> json) => Doctor(
           .toList(),
   description: json['description'] as String?,
   licenseNumber: json['license_number'] as String?,
+  profilePictureUrl: json['profile_picture_url'] as String?,
+  isActive: (json['is_active'] as num?)?.toInt(),
+  createdAt:
+      json['created_at'] == null
+          ? null
+          : DateTime.parse(json['created_at'] as String),
+  updatedAt:
+      json['updated_at'] == null
+          ? null
+          : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$DoctorToJson(Doctor instance) => <String, dynamic>{
@@ -49,4 +59,8 @@ Map<String, dynamic> _$DoctorToJson(Doctor instance) => <String, dynamic>{
       instance.availableSchedules?.map((e) => e.toJson()).toList(),
   'description': instance.description,
   'license_number': instance.licenseNumber,
+  'profile_picture_url': instance.profilePictureUrl,
+  'is_active': instance.isActive,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
 };

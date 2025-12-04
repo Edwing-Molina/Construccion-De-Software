@@ -26,7 +26,7 @@ class _ScreenCitasState extends State<ScreenCitas> {
   String? _userRole;
   String _searchTerm = '';
 
-  late final CitasService _citasService;
+  late final ServiceCitas _citasService;
   late final AuthService _authService;
 
   final DateFormat _displayDateFormat = DateFormat('dd/MM/yyyy');
@@ -62,43 +62,47 @@ class _ScreenCitasState extends State<ScreenCitas> {
     final term = search.trim().toLowerCase();
     setState(() {
       _searchTerm = term;
-      _citasFiltradas = _citas.where((cita) {
-        if (cita.status.toLowerCase() == 'completado') return false;
+      _citasFiltradas =
+          _citas.where((cita) {
+            if (cita.status?.toLowerCase() == 'completado') return false;
 
-        final nombre = cita.patient?.user?.name?.toLowerCase() ?? '';
-        final fechaStr = (cita.appointmentDate ?? cita.availableSchedule?.date)
-                ?.toLocal();
-        final fecha = fechaStr == null
-            ? ''
-            : _displayDateFormat.format(fechaStr).toLowerCase();
-        final estado = cita.status.toLowerCase();
+            final nombre = cita.patient?.user?.name?.toLowerCase() ?? '';
+            final fechaStr =
+                (cita.appointmentDate ?? cita.availableSchedule?.date)
+                    ?.toLocal();
+            final fecha =
+                fechaStr == null
+                    ? ''
+                    : _displayDateFormat.format(fechaStr).toLowerCase();
+            final estado = cita.status?.toLowerCase() ?? '';
 
-        return nombre.contains(term) ||
-            fecha.contains(term) ||
-            estado.contains(term);
-      }).toList();
+            return nombre.contains(term) ||
+                fecha.contains(term) ||
+                estado.contains(term);
+          }).toList();
     });
   }
 
   Future<void> _confirmarCancelarCita(int appointmentId) async {
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar cancelación'),
-        content: const Text(
-          '¿Estás seguro de que quieres cancelar esta cita? Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmar cancelación'),
+            content: const Text(
+              '¿Estás seguro de que quieres cancelar esta cita? Esta acción no se puede deshacer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Sí, cancelar'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sí, cancelar'),
-          ),
-        ],
-      ),
     );
 
     if (confirmado == true) {
@@ -134,12 +138,9 @@ class _ScreenCitasState extends State<ScreenCitas> {
 
   void _showSnackBar(String message, {Color color = Colors.black}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -219,9 +220,10 @@ class _ScreenCitasState extends State<ScreenCitas> {
       );
     }
 
-    final citasVisibles = _citasFiltradas
-        .where((c) => c.status != 'completado' && c.status != 'cancelada')
-        .toList();
+    final citasVisibles =
+        _citasFiltradas
+            .where((c) => c.status != 'completado' && c.status != 'cancelada')
+            .toList();
 
     if (citasVisibles.isEmpty) {
       return const Center(
@@ -247,8 +249,7 @@ class _ScreenCitasState extends State<ScreenCitas> {
     final fechaDate =
         (cita.appointmentDate ?? cita.availableSchedule?.date)?.toLocal();
     final startTime = cita.availableSchedule?.startTime;
-    final horaFormatted =
-        startTime != null ? startTime.format(context) : 'N/D';
+    final horaFormatted = startTime != null ? startTime.format(context) : 'N/D';
     final status = cita.status;
     final doctorId = cita.doctor?.id;
     final clinicId = cita.availableSchedule?.clinicId;
@@ -286,9 +287,10 @@ class _ScreenCitasState extends State<ScreenCitas> {
             Text(
               'Estado: $status',
               style: TextStyle(
-                color: status == 'completado'
-                    ? Colors.green
-                    : (status == 'cancelada' ? Colors.red : Colors.orange),
+                color:
+                    status == 'completado'
+                        ? Colors.green
+                        : (status == 'cancelada' ? Colors.red : Colors.orange),
               ),
             ),
             if (_userRole == 'patient' &&
@@ -322,23 +324,25 @@ class _ScreenCitasState extends State<ScreenCitas> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Detalles de la Cita'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (clinicId != null) Text('Clínica Uady:$clinicId'),
-                        Text('Hora inicio: $horaFormatted'),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cerrar'),
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('Detalles de la Cita'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (clinicId != null)
+                              Text('Clínica Uady:$clinicId'),
+                            Text('Hora inicio: $horaFormatted'),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 );
               },
             ),

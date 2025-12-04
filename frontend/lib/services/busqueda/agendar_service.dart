@@ -38,11 +38,23 @@ class AgendarService extends BaseService {
 
     final uri = Uri.parse('${BaseService.baseUrl}/patient-appointments');
 
+    print(
+      '[AgendarService] Creando cita con schedule ID: $availableScheduleId',
+    );
+    print('[AgendarService] URL: $uri');
+    print('[AgendarService] Token: $token');
+
+    final body = json.encode({'available_schedule_id': availableScheduleId});
+    print('[AgendarService] Body: $body');
+
     final response = await http.post(
       uri,
       headers: headersWithAuth(token),
-      body: json.encode({'available_schedule_id': availableScheduleId}),
+      body: body,
     );
+
+    print('[AgendarService] Response status: ${response.statusCode}');
+    print('[AgendarService] Response body: ${response.body}');
 
     return handleResponse(
       response,
