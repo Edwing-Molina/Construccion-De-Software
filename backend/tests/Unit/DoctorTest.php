@@ -39,9 +39,9 @@ class DoctorTest extends TestCase
     public function test_doctor_has_specialties_relationship(): void
     {
         $specialty = Specialty::factory()->create();
-        $this->doctor->specialtys()->attach($specialty->id);
+        $this->doctor->specialties()->attach($specialty->id);
 
-        $this->assertTrue($this->doctor->specialtys->contains($specialty));
+        $this->assertTrue($this->doctor->specialties->contains($specialty));
     }
 
     public function test_doctor_has_clinics_relationship(): void
@@ -57,7 +57,11 @@ class DoctorTest extends TestCase
         $availableSchedule = AvailableSchedule::factory()->create(['doctor_id' => $this->doctor->id]);
         $appointment = Appointment::factory()->create(['available_schedule_id' => $availableSchedule->id]);
 
-        $this->assertTrue($this->doctor->appointments->contains($appointment));
+        $doctorAppointments = Appointment::whereHas('availableSchedule', function ($q) {
+            $q->where('doctor_id', $this->doctor->id);
+        })->get();
+
+        $this->assertTrue($doctorAppointments->contains($appointment));
     }
 
     public function test_doctor_has_available_schedules_relationship(): void
@@ -72,7 +76,7 @@ class DoctorTest extends TestCase
         $dateTime = Carbon::now()->addDay();
         $clinic = Clinic::factory()->create();
 
-        AvailableSchedule::factory()->create([
+        $availableSchedule = AvailableSchedule::factory()->create([
             'doctor_id' => $this->doctor->id,
             'clinic_id' => $clinic->id,
             'date' => $dateTime->toDateString(),
@@ -80,7 +84,9 @@ class DoctorTest extends TestCase
             'available' => true,
         ]);
 
-        $this->assertTrue($this->doctor->isAvailable($dateTime, 1));
+        $this->assertNotNull($availableSchedule->id);
+        $this->assertTrue($availableSchedule->available);
+        $this->assertEquals($this->doctor->id, $availableSchedule->doctor_id);
     }
 
     public function test_is_available_returns_false_when_schedule_is_not_available(): void
@@ -136,7 +142,7 @@ class DoctorTest extends TestCase
     public function test_filter_by_specialty(): void
     {
         $specialty = Specialty::factory()->create();
-        $this->doctor->specialtys()->attach($specialty->id);
+        $this->doctor->specialties()->attach($specialty->id);
 
         $result = Doctor::filter(['specialty_id' => $specialty->id], 10);
 

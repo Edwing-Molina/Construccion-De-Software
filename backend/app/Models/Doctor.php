@@ -6,12 +6,13 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Clinic;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Doctor extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',

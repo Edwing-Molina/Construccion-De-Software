@@ -8,10 +8,13 @@ use App\Models\User;
 use App\Models\Clinic;
 use App\Enums\DayOfWeek;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DoctorWorkPatternModelTest extends TestCase
 {
+    use RefreshDatabase;
+
     private Doctor $doctor;
     private Clinic $clinic;
 
@@ -19,14 +22,9 @@ class DoctorWorkPatternModelTest extends TestCase
     {
         parent::setUp();
 
-        $user = User::create([
-            'name' => 'Dr. Work Pattern',
-            'email' => 'workpattern@example.com',
-            'password' => 'password123',
-        ]);
-
-        $this->doctor = Doctor::create(['user_id' => $user->id]);
-        $this->clinic = Clinic::create(['name' => 'Test Clinic']);
+        $user = User::factory()->withDoctor()->create();
+        $this->doctor = $user->doctor;
+        $this->clinic = Clinic::factory()->create();
     }
 
     /**
@@ -60,6 +58,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'start_time_pattern' => '08:00:00',
             'end_time_pattern' => '16:00:00',
             'slot_duration_minutes' => 45,
+            'is_active' => true,
         ]);
 
         $this->assertTrue($pattern->doctor()->exists());
@@ -78,6 +77,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '18:00:00',
             'slot_duration_minutes' => 60,
+            'is_active' => true,
         ]);
 
         $this->assertTrue($pattern->clinic()->exists());
@@ -95,6 +95,8 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::THURSDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '17:00:00',
+            'slot_duration_minutes' => 30,
+            'is_active' => true,
         ]);
 
         $this->assertInstanceOf(DayOfWeek::class, $pattern->fresh()->day_of_week);
@@ -111,6 +113,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::FRIDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '17:00:00',
+            'slot_duration_minutes' => 30,
             'is_active' => true,
         ]);
 
@@ -128,6 +131,8 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::SATURDAY->value,
             'start_time_pattern' => '10:00:00',
             'end_time_pattern' => '14:00:00',
+            'slot_duration_minutes' => 30,
+            'is_active' => true,
         ]);
 
         $results = DoctorWorkPattern::forDoctor($this->doctor->id)->get();
@@ -146,6 +151,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::SUNDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '13:00:00',
+            'slot_duration_minutes' => 30,
             'is_active' => true,
         ]);
 
@@ -171,6 +177,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::MONDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '17:00:00',
+            'slot_duration_minutes' => 30,
             'is_active' => true,
         ]);
 
@@ -180,6 +187,7 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::TUESDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '17:00:00',
+            'slot_duration_minutes' => 30,
             'is_active' => true,
         ]);
 
@@ -197,6 +205,8 @@ class DoctorWorkPatternModelTest extends TestCase
             'day_of_week' => DayOfWeek::MONDAY->value,
             'start_time_pattern' => '09:00:00',
             'end_time_pattern' => '17:00:00',
+            'slot_duration_minutes' => 30,
+            'is_active' => true,
             'start_date_effective' => Carbon::now(),
             'end_date_effective' => Carbon::now()->addMonths(3),
         ]);

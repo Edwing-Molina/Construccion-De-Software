@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/models/doctor.dart';
 import 'package:frontend/models/specialty.dart';
 import 'package:frontend/screens/busqueda/agendar_screen.dart';
+import 'package:frontend/screens/busqueda/widgets/doctor_list_widget.dart';
+import 'package:frontend/screens/busqueda/widgets/search_input_widget.dart';
+import 'package:frontend/screens/busqueda/widgets/specialty_dropdown_widget.dart';
 import 'package:frontend/services/busqueda/busqueda_service.dart';
 import 'package:frontend/services/service_locator.dart';
 import 'package:frontend/widgets/common/loading_indicator.dart';
@@ -122,7 +125,7 @@ class _BusquedaScreenState extends State<BusquedaScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            context.go('/home'); // Vuelve a la pantalla anterior
+            context.go('/home');
           },
         ),
       ),
@@ -135,118 +138,21 @@ class _BusquedaScreenState extends State<BusquedaScreen> {
               )
               : Column(
                 children: [
-                  _buildSearchInput(),
-                  _buildSpecialtyDropdown(),
+                  SearchInputWidget(onSearchChanged: _onSearchChanged),
+                  SpecialtyDropdownWidget(
+                    specialties: _specialties,
+                    selectedSpecialtyId: _selectedSpecialtyId,
+                    onSpecialtyChanged: _onSpecialtyChanged,
+                  ),
                   const Divider(height: 1),
-                  Expanded(child: _buildDoctorList()),
+                  Expanded(
+                    child: DoctorListWidget(
+                      doctors: _filteredDoctors,
+                      onShowAvailability: _showAvailability,
+                    ),
+                  ),
                 ],
               ),
-    );
-  }
-
-  Widget _buildSearchInput() {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: TextField(
-        decoration: const InputDecoration(
-          hintText: 'Buscar doctor por nombre',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
-        ),
-        onChanged: _onSearchChanged,
-      ),
-    );
-  }
-
-  Widget _buildSpecialtyDropdown() {
-    // Construimos una lista que incluye null para "Todas las especialidades"
-    final specialtiesWithAll = [null, ..._specialties];
-
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: DropdownMenu<int?>(
-        width: MediaQuery.of(context).size.width,
-        // Valor seleccionado
-        initialSelection: _selectedSpecialtyId,
-        // Hint cuando no hay selección
-        hintText: 'Especialidad',
-        // Items con búsqueda interna
-        dropdownMenuEntries:
-            specialtiesWithAll.map((s) {
-              if (s == null) {
-                return DropdownMenuEntry<int?>(
-                  value: null,
-                  label: 'Todas las especialidades',
-                );
-              } else {
-                return DropdownMenuEntry<int?>(value: s.id, label: s.name);
-              }
-            }).toList(),
-        onSelected: (value) {
-          _onSpecialtyChanged(value);
-        },
-      ),
-    );
-  }
-
-  Widget _buildDoctorList() {
-    if (_filteredDoctors.isEmpty) {
-      return const Center(child: Text('No hay doctores disponibles.'));
-    }
-
-    return ListView.builder(
-      itemCount: _filteredDoctors.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemBuilder: (context, index) {
-        final doctor = _filteredDoctors[index];
-        final name = doctor.user?.name ?? 'Sin nombre';
-        final specialties =
-            doctor.specialties?.map((s) => s.name).join(', ') ?? '';
-
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.person_outline,
-                  size: 40,
-                  color: Colors.blueAccent,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        specialties,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => _showAvailability(doctor),
-                  child: const Text('Ver disponibilidad'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

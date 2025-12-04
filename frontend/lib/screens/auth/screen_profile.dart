@@ -5,7 +5,7 @@ import '../../models/models.dart';
 import '../../core/constants/app_colors.dart';
 import '../../widgets/common/gradient_background.dart';
 import '../../widgets/common/logo_section.dart';
-import '../../widgets/common/custom_button.dart';
+import 'widgets/profile_widgets/index.dart';
 
 class ScreenPerfil extends StatefulWidget {
   const ScreenPerfil({super.key});
@@ -139,91 +139,11 @@ class _ScreenPerfilState extends State<ScreenPerfil> {
       );
     }
 
-    final doctor = _usuario!.doctor;
-    final patient = _usuario!.patient;
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 6,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailRow('Nombre', _usuario!.name),
-                _buildDetailRow('Correo', _usuario!.email),
-                if (_usuario!.phone != null)
-                  _buildDetailRow('Teléfono', _usuario!.phone!),
-                const Divider(),
-
-                if (patient != null) ...[
-                  _buildSectionTitle('Información del Paciente'),
-                  _buildDetailRow(
-                    'Fecha de nacimiento',
-                    formatDate(patient.birth) ?? 'No especificada',
-                  ),
-                  if (patient.gender != null)
-                    _buildDetailRow('Género', patient.gender!),
-                  if (patient.bloodType != null)
-                    _buildDetailRow('Tipo de Sangre', patient.bloodType!),
-                  if (patient.emergencyContactName != null)
-                    _buildDetailRow(
-                      'Contacto de Emergencia',
-                      patient.emergencyContactName!,
-                    ),
-                  if (patient.emergencyContactPhone != null)
-                    _buildDetailRow(
-                      'Tel. de Emergencia',
-                      patient.emergencyContactPhone!,
-                    ),
-                  if (patient.nssNumber != null)
-                    _buildDetailRow('Número NSS', patient.nssNumber!),
-                ],
-
-                if (doctor != null) ...[
-                  _buildSectionTitle('Descripción del Doctor'),
-
-                  if (doctor.description != null &&
-                      doctor.description!.isNotEmpty)
-                    _buildDetailRow('Cédula Profesional', doctor.description!),
-
-                  _buildDetailRow(
-                    'Especialidades',
-                    _specialties.isNotEmpty
-                        ? _specialties.map((s) => s.name).join(', ')
-                        : 'No asignadas',
-                  ),
-
-                  ..._buildClinicInfo(),
-                ],
-
-                const SizedBox(height: 20),
-                CustomButton(
-                  text: 'Editar Perfil',
-                  onPressed: () => context.go('/perfil/edit'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: AppColors.uadyBlue,
-        ),
-      ),
+    return ProfileCardWidget(
+      user: _usuario!,
+      specialties: _specialties,
+      clinics: _clinics,
+      onEditPressed: () => context.go('/perfil/edit'),
     );
   }
 

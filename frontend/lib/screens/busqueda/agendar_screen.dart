@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:frontend/models/available_schedule.dart';
+import 'package:frontend/screens/busqueda/agendar_widgets/date_selector_widget.dart';
+import 'package:frontend/screens/busqueda/agendar_widgets/month_year_selector_widget.dart';
 import 'package:frontend/services/busqueda/agendar_service.dart';
 import 'package:frontend/widgets/common/loading_indicator.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -109,44 +110,6 @@ class _AgendarScreenState extends State<AgendarScreen> {
     }
   }
 
-  Widget _buildMonthYearSelector() {
-    final monthYearFormat = DateFormat.yMMMM('es');
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: () {
-            setState(() {
-              _selectedMonth = DateTime(
-                _selectedMonth.year,
-                _selectedMonth.month - 1,
-              );
-              _adjustSelectedDay();
-            });
-          },
-        ),
-        Text(
-          monthYearFormat.format(_selectedMonth),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: () {
-            setState(() {
-              _selectedMonth = DateTime(
-                _selectedMonth.year,
-                _selectedMonth.month + 1,
-              );
-              _adjustSelectedDay();
-            });
-          },
-        ),
-      ],
-    );
-  }
-
   void _adjustSelectedDay() {
     final availableDaysThisMonth =
         _availableSchedules
@@ -175,104 +138,6 @@ class _AgendarScreenState extends State<AgendarScreen> {
       _selectedDay = null;
       _dayStartIndex = 0;
     }
-  }
-
-  Widget _buildDateSelector() {
-    if (_selectedDay == null) {
-      return const Text('No hay días disponibles en este mes');
-    }
-
-    final uniqueDays =
-        _availableSchedules
-            .map((s) => DateTime(s.date.year, s.date.month, s.date.day))
-            .where(
-              (d) =>
-                  d.year == _selectedMonth.year &&
-                  d.month == _selectedMonth.month,
-            )
-            .toSet()
-            .toList();
-
-    uniqueDays.sort();
-
-    // Obtener bloque visible de días según _dayStartIndex y _visibleDaysCount
-    final visibleDays =
-        uniqueDays.skip(_dayStartIndex).take(_visibleDaysCount).toList();
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed:
-              _dayStartIndex > 0
-                  ? () {
-                    setState(() {
-                      _dayStartIndex = (_dayStartIndex - _visibleDaysCount)
-                          .clamp(0, uniqueDays.length - 1);
-                    });
-                  }
-                  : null,
-        ),
-        ...visibleDays.map((date) {
-          final isSelected =
-              _selectedDay != null &&
-              _selectedDay!.year == date.year &&
-              _selectedDay!.month == date.month &&
-              _selectedDay!.day == date.day;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedDay = date;
-              });
-            },
-            child: Container(
-              width: 60,
-              height: 70,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.blue : Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat.E('es').format(date),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  Text(
-                    date.day.toString(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed:
-              _dayStartIndex + _visibleDaysCount < uniqueDays.length
-                  ? () {
-                    setState(() {
-                      _dayStartIndex = (_dayStartIndex + _visibleDaysCount)
-                          .clamp(0, uniqueDays.length - 1);
-                    });
-                  }
-                  : null,
-        ),
-      ],
-    );
   }
 
   @override
@@ -314,9 +179,74 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              _buildMonthYearSelector(),
+              MonthYearSelectorWidget(
+                selectedMonth: _selectedMonth,
+                onPreviousMonth: () {
+                  setState(() {
+                    _selectedMonth = DateTime(
+                      _selectedMonth.year,
+                      _selectedMonth.month - 1,
+                    );
+                    _adjustSelectedDay();
+                  });
+                },
+                onNextMonth: () {
+                  setState(() {
+                    _selectedMonth = DateTime(
+                      _selectedMonth.year,
+                      _selectedMonth.month + 1,
+                    );
+                    _adjustSelectedDay();
+                  });
+                },
+              ),
               const SizedBox(height: 8),
-              _buildDateSelector(),
+              Builder(
+                builder: (context) {
+                  final uniqueDays =
+                      _availableSchedules
+                          .map(
+                            (s) =>
+                                DateTime(s.date.year, s.date.month, s.date.day),
+                          )
+                          .where(
+                            (d) =>
+                                d.year == _selectedMonth.year &&
+                                d.month == _selectedMonth.month,
+                          )
+                          .toSet()
+                          .toList();
+
+                  uniqueDays.sort();
+
+                  return DateSelectorWidget(
+                    uniqueDays: uniqueDays,
+                    selectedDay: _selectedDay,
+                    dayStartIndex: _dayStartIndex,
+                    visibleDaysCount: _visibleDaysCount,
+                    onDateSelected: (date) {
+                      setState(() {
+                        _selectedDay = date;
+                      });
+                    },
+                    onPreviousDays: () {
+                      setState(() {
+                        _dayStartIndex = (_dayStartIndex - _visibleDaysCount)
+                            .clamp(0, uniqueDays.length - 1);
+                      });
+                    },
+                    onNextDays: () {
+                      setState(() {
+                        _dayStartIndex = (_dayStartIndex + _visibleDaysCount)
+                            .clamp(0, uniqueDays.length - 1);
+                      });
+                    },
+                    canGoToPrevious: _dayStartIndex > 0,
+                    canGoToNext:
+                        _dayStartIndex + _visibleDaysCount < uniqueDays.length,
+                  );
+                },
+              ),
               const SizedBox(height: 16),
               if (horariosDelDia.isEmpty)
                 const Text('No hay horarios disponibles.')

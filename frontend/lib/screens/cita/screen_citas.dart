@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/models.dart';
 import '../../services/services.dart';
-import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/gradient_background.dart';
 import '../../widgets/common/logo_section.dart';
+import 'widgets/cita_card_widget.dart';
+import 'widgets/citas_app_bar_widget.dart';
+import 'widgets/citas_search_bar_widget.dart';
 
 /// Screen that shows appointments for the current user.
 ///
@@ -24,7 +25,6 @@ class _ScreenCitasState extends State<ScreenCitas> {
   List<Appointment> _citas = [];
   List<Appointment> _citasFiltradas = [];
   String? _userRole;
-  String _searchTerm = '';
 
   late final ServiceCitas _citasService;
   late final AuthService _authService;
@@ -61,12 +61,11 @@ class _ScreenCitasState extends State<ScreenCitas> {
   void _filtrarCitas(String search) {
     final term = search.trim().toLowerCase();
     setState(() {
-      _searchTerm = term;
       _citasFiltradas =
           _citas.where((cita) {
             if (cita.status?.toLowerCase() == 'completado') return false;
 
-            final nombre = cita.patient?.user?.name?.toLowerCase() ?? '';
+            final nombre = (cita.patient?.user?.name ?? '').toLowerCase();
             final fechaStr =
                 (cita.appointmentDate ?? cita.availableSchedule?.date)
                     ?.toLocal();
@@ -145,208 +144,62 @@ class _ScreenCitasState extends State<ScreenCitas> {
 
   @override
   Widget build(BuildContext context) {
+    final citasVisibles =
+        _citasFiltradas
+            .where((c) => c.status != 'completado' && c.status != 'cancelada')
+            .toList();
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: GradientBackground(
         child: SafeArea(
           child: Column(
             children: [
-              _buildAppBar(),
+              const CitasAppBarWidget(),
               const SizedBox(height: 10),
               const LogoSection(),
-              _buildSearchBar(),
+              CitasSearchBarWidget(onSearchChanged: _filtrarCitas),
               const SizedBox(height: 10),
-              Expanded(child: _buildCitasList()),
+              Expanded(
+                child:
+                    _isLoading
+                        ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.uadyBlue,
+                          ),
+                        )
+                        : citasVisibles.isEmpty
+                        ? const Center(
+                          child: Text(
+                            'No tienes citas por el momento',
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        )
+                        : ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          itemCount: citasVisibles.length,
+                          itemBuilder: (context, index) {
+                            final cita = citasVisibles[index];
+                            return CitaCardWidget(
+                              cita: cita,
+                              userRole: _userRole,
+                              isLoading: _isLoading,
+                              onCancelPressed:
+                                  () => _confirmarCancelarCita(cita.id!),
+                              onCompletePressed: () => _completarCita(cita.id!),
+                              onRemovePressed: () => _completarCita(cita.id!),
+                            );
+                          },
+                        ),
+              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      color: AppColors.uadyBlue,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.white),
-            onPressed: () => context.go('/home'),
-          ),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'Mis Citas',
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: TextField(
-        decoration: const InputDecoration(
-          hintText: 'Buscar por paciente, fecha o estado',
-          prefixIcon: Icon(Icons.search),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: EdgeInsets.symmetric(vertical: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        onChanged: _filtrarCitas,
-      ),
-    );
-  }
-
-  Widget _buildCitasList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.uadyBlue),
-      );
-    }
-
-    final citasVisibles =
-        _citasFiltradas
-            .where((c) => c.status != 'completado' && c.status != 'cancelada')
-            .toList();
-
-    if (citasVisibles.isEmpty) {
-      return const Center(
-        child: Text(
-          'No tienes citas por el momento',
-          style: TextStyle(color: AppColors.white, fontSize: 16),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: citasVisibles.length,
-      itemBuilder: (context, index) {
-        final cita = citasVisibles[index];
-        return _buildCitaCard(cita);
-      },
-    );
-  }
-
-  Widget _buildCitaCard(Appointment cita) {
-    final pacienteNombre = cita.patient?.user?.name ?? 'Paciente';
-    final fechaDate =
-        (cita.appointmentDate ?? cita.availableSchedule?.date)?.toLocal();
-    final startTime = cita.availableSchedule?.startTime;
-    final horaFormatted = startTime != null ? startTime.format(context) : 'N/D';
-    final status = cita.status;
-    final doctorId = cita.doctor?.id;
-    final clinicId = cita.availableSchedule?.clinicId;
-    final formattedDate =
-        fechaDate != null ? _displayDateFormat.format(fechaDate) : 'N/D';
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 15),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_userRole == 'doctor')
-              Text(
-                'Paciente: $pacienteNombre',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            if (_userRole == 'patient')
-              Text(
-                'Doctor $doctorId',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            const SizedBox(height: 6),
-            Text('Fecha: $formattedDate - $horaFormatted'),
-            const SizedBox(height: 6),
-            Text(
-              'Estado: $status',
-              style: TextStyle(
-                color:
-                    status == 'completado'
-                        ? Colors.green
-                        : (status == 'cancelada' ? Colors.red : Colors.orange),
-              ),
-            ),
-            if (_userRole == 'patient' &&
-                status != 'completado' &&
-                status != 'cancelada')
-              CustomButton(
-                text: 'Cancelar cita',
-                onPressed:
-                    _isLoading ? null : () => _confirmarCancelarCita(cita.id!),
-                isLoading: _isLoading,
-              ),
-            const SizedBox(height: 8),
-            if (_userRole == 'doctor' &&
-                status != 'completado' &&
-                status != 'cancelada')
-              CustomButton(
-                text: 'Completar Cita',
-                onPressed: _isLoading ? null : () => _completarCita(cita.id!),
-                isLoading: _isLoading,
-              ),
-            if (_userRole == 'doctor' && status == 'cancelada')
-              CustomButton(
-                text: 'Quitar cita de la lista',
-                onPressed: _isLoading ? null : () => _completarCita(cita.id!),
-                isLoading: _isLoading,
-              ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.info_outline),
-              label: const Text('Más información'),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Detalles de la Cita'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (clinicId != null)
-                              Text('Clínica Uady:$clinicId'),
-                            Text('Hora inicio: $horaFormatted'),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cerrar'),
-                          ),
-                        ],
-                      ),
-                );
-              },
-            ),
-          ],
         ),
       ),
     );

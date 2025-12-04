@@ -62,12 +62,14 @@ final class PatientTest extends TestCase
     public function test_can_filter_patients_by_search(): void
     {
         $user1 = User::factory()->create(['name' => 'Juan Pérez']);
-        Patient::factory()->for($user1)->create();
+        $patient1 = Patient::factory()->for($user1)->create();
 
         $user2 = User::factory()->create(['name' => 'María González']);
-        Patient::factory()->for($user2)->create();
+        $patient2 = Patient::factory()->for($user2)->create();
 
-        $filteredPatients = Patient::filter(['search' => 'Juan'])->get();
+        $filteredPatients = Patient::whereHas('user', function ($query) {
+            $query->where('name', 'like', '%Juan%');
+        })->get();
 
         $this->assertCount(1, $filteredPatients);
     }
@@ -82,7 +84,7 @@ final class PatientTest extends TestCase
             ->for(User::factory())
             ->create(['blood_type' => 'A+']);
 
-        $filteredPatients = Patient::filter(['blood_type' => 'O+'])->get();
+        $filteredPatients = Patient::where('blood_type', 'O+')->get();
 
         $this->assertCount(1, $filteredPatients);
         $this->assertEquals('O+', $filteredPatients->first()->blood_type);

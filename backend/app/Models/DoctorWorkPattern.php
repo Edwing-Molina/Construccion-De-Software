@@ -6,9 +6,11 @@ namespace App\Models;
 
 use App\Enums\DayOfWeek;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class DoctorWorkPattern extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'doctor_id', 
         'clinic_id', 

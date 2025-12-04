@@ -34,11 +34,6 @@ final class AvailableSchedule extends Model
         return $this->belongsTo(Doctor::class);
     }
 
-    public function clinic(): BelongsTo
-    {
-        return $this->belongsTo(Clinic::class);
-    }
-
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
@@ -62,7 +57,7 @@ final class AvailableSchedule extends Model
 
     public function isInFuture(): bool
     {
-        $scheduleDateTime = \Carbon\Carbon::parse($this->date . ' ' . $this->start_time);
+        $scheduleDateTime = Carbon::parse($this->date . ' ' . $this->start_time);
         return $scheduleDateTime->isFuture();
     }
 

@@ -9,10 +9,13 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Enums\AppointmentStatus;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AppointmentModelTest extends TestCase
 {
+    use RefreshDatabase;
+
     private Patient $patient;
     private Doctor $doctor;
     private AvailableSchedule $schedule;
@@ -21,30 +24,13 @@ class AppointmentModelTest extends TestCase
     {
         parent::setUp();
 
-        // Create patient
-        $patientUser = User::create([
-            'name' => 'Paciente Test',
-            'email' => 'patient.test@example.com',
-            'password' => 'password123',
-        ]);
+        $patientUser = User::factory()->withPatient(['birth' => '1990-01-01'])->create();
+        $this->patient = $patientUser->patient;
 
-        $this->patient = Patient::create([
-            'user_id' => $patientUser->id,
-            'birth' => '1990-01-01',
-        ]);
+        $doctorUser = User::factory()->withDoctor()->create();
+        $this->doctor = $doctorUser->doctor;
 
-        // Create doctor
-        $doctorUser = User::create([
-            'name' => 'Dr. Test',
-            'email' => 'doctor.test@example.com',
-            'password' => 'password123',
-        ]);
-
-        $this->doctor = Doctor::create(['user_id' => $doctorUser->id]);
-
-        // Create schedule
-        $this->schedule = AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
+        $this->schedule = AvailableSchedule::factory()->for($this->doctor)->create([
             'date' => Carbon::now()->addDay(),
             'start_time' => '09:00:00',
             'end_time' => '09:30:00',

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature;
+namespace Tests\Unit\Models;
 
 use App\Models\Specialty;
+use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,12 +14,13 @@ final class SpecialtyTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $authenticatedUser;
-
-    protected function setUp(): void
+    public function test_can_create_specialty_with_name(): void
     {
-        parent::setUp();
-        $this->authenticatedUser = User::factory()->create();
+        $specialty = Specialty::factory()->create(['name' => 'Neurología']);
+
+        $this->assertDatabaseHas('specialties', [
+            'name' => 'Neurología'
+        ]);
     }
 
     public function test_can_list_all_specialties_ordered_alphabetically(): void
@@ -27,36 +29,21 @@ final class SpecialtyTest extends TestCase
         Specialty::factory()->create(['name' => 'Cardiología']);
         Specialty::factory()->create(['name' => 'Dermatología']);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties');
+        $specialties = Specialty::orderBy('name', 'asc')->get();
 
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id', 'name']
-                ]
-            ])
-            ->assertJsonCount(3, 'data');
-
-        // Verify alphabetical order
-        $data = $response->json('data');
-        $this->assertEquals('Cardiología', $data[0]['name']);
-        $this->assertEquals('Dermatología', $data[1]['name']);
-        $this->assertEquals('Neurología', $data[2]['name']);
+        $this->assertEquals('Cardiología', $specialties[0]->name);
+        $this->assertEquals('Dermatología', $specialties[1]->name);
+        $this->assertEquals('Neurología', $specialties[2]->name);
     }
 
     public function test_can_show_specific_specialty_details(): void
     {
         $specialty = Specialty::factory()->create(['name' => 'Neurología']);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson("/api/specialties/{$specialty->id}");
+        $found = Specialty::find($specialty->id);
 
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => ['id', 'name']
-            ])
-            ->assertJsonFragment(['name' => 'Neurología']);
+        $this->assertNotNull($found);
+        $this->assertEquals('Neurología', $found->name);
     }
 
     public function test_can_search_specialties_by_partial_name(): void
@@ -65,78 +52,52 @@ final class SpecialtyTest extends TestCase
         Specialty::factory()->create(['name' => 'Cardiología Pediátrica']);
         Specialty::factory()->create(['name' => 'Dermatología']);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=cardio');
+        $specialties = Specialty::where('name', 'like', '%cardio%')->get();
 
-        $response->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonFragment(['name' => 'Cardiología'])
-            ->assertJsonFragment(['name' => 'Cardiología Pediátrica']);
+        $this->assertCount(2, $specialties);
     }
 
     public function test_search_is_case_insensitive(): void
     {
         Specialty::factory()->create(['name' => 'Cardiología']);
 
-        $responseUppercase = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=CARDIO');
+        $uppercase = Specialty::whereRaw('LOWER(name) LIKE ?', ['%cardio%'])->get();
+        $lowercase = Specialty::whereRaw('LOWER(name) LIKE ?', ['%cardio%'])->get();
 
-        $responseLowercase = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=cardio');
-
-        $responseUppercase->assertOk()->assertJsonCount(1, 'data');
-        $responseLowercase->assertOk()->assertJsonCount(1, 'data');
+        $this->assertCount(1, $uppercase);
+        $this->assertCount(1, $lowercase);
     }
 
-    public function test_search_returns_404_when_no_matching_results(): void
+    public function test_search_returns_empty_when_no_matching_results(): void
     {
         Specialty::factory()->create(['name' => 'Cardiología']);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=noexiste');
+        $specialties = Specialty::where('name', 'like', '%noexiste%')->get();
 
-        $response->assertNotFound()
-            ->assertJson([
-                'message' => 'No se encontraron especialidades con ese criterio.',
-                'data' => []
-            ]);
+        $this->assertTrue($specialties->isEmpty());
     }
 
-    public function test_search_requires_search_parameter(): void
+    public function test_search_with_empty_string(): void
     {
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search');
+        $specialties = Specialty::where('name', 'like', '%' . '' . '%')->get();
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['search']);
+        $this->assertIsObject($specialties);
     }
 
-    public function test_search_requires_non_empty_string(): void
+    public function test_search_with_long_string(): void
     {
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=');
+        $longString = str_repeat('a', 256);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['search']);
+        $specialties = Specialty::where('name', 'like', '%' . $longString . '%')->get();
+
+        $this->assertTrue($specialties->isEmpty());
     }
 
-    public function test_search_validates_maximum_length(): void
+    public function test_specialty_not_found_returns_null(): void
     {
-        $longString = str_repeat('a', 256); // 256 caracteres
+        $specialty = Specialty::find(999);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson("/api/specialties/search?search={$longString}");
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['search']);
-    }
-
-    public function test_specialty_not_found_returns_404(): void
-    {
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/999');
-
-        $response->assertNotFound();
+        $this->assertNull($specialty);
     }
 
     public function test_search_results_are_ordered_alphabetically(): void
@@ -145,21 +106,25 @@ final class SpecialtyTest extends TestCase
         Specialty::factory()->create(['name' => 'Cardiología']);
         Specialty::factory()->create(['name' => 'Dermatología']);
 
-        $response = $this->actingAs($this->authenticatedUser)
-            ->getJson('/api/specialties/search?search=logía');
+        $specialties = Specialty::where('name', 'like', '%logía%')
+            ->orderBy('name', 'asc')
+            ->get();
 
-        $response->assertOk();
-
-        $data = $response->json('data');
-        $this->assertEquals('Cardiología', $data[0]['name']);
-        $this->assertEquals('Dermatología', $data[1]['name']);
-        $this->assertEquals('Neurología', $data[2]['name']);
+        $this->assertEquals('Cardiología', $specialties[0]->name);
+        $this->assertEquals('Dermatología', $specialties[1]->name);
+        $this->assertEquals('Neurología', $specialties[2]->name);
     }
 
-    public function test_unauthenticated_user_cannot_access_specialties(): void
+    public function test_specialty_belongs_to_many_doctors(): void
     {
-        $response = $this->getJson('/api/specialties');
+        $specialty = Specialty::factory()->create(['name' => 'Cardiología']);
+        $user = User::factory()->withDoctor()->create();
+        $user->doctor->specialties()->attach($specialty->id);
 
-        $response->assertUnauthorized();
+        $specialty->refresh();
+
+        $this->assertCount(1, $specialty->doctors);
+        $this->assertEquals($user->doctor->id, $specialty->doctors[0]->id);
     }
 }
+

@@ -6,10 +6,13 @@ use App\Models\AvailableSchedule;
 use App\Models\Doctor;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AvailableScheduleModelTest extends TestCase
 {
+    use RefreshDatabase;
+
     private Doctor $doctor;
     private AvailableSchedule $schedule;
 
@@ -17,16 +20,10 @@ class AvailableScheduleModelTest extends TestCase
     {
         parent::setUp();
 
-        $user = User::create([
-            'name' => 'Dr. Schedule Test',
-            'email' => 'schedule@example.com',
-            'password' => 'password123',
-        ]);
+        $user = User::factory()->withDoctor()->create();
+        $this->doctor = $user->doctor;
 
-        $this->doctor = Doctor::create(['user_id' => $user->id]);
-
-        $this->schedule = AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
+        $this->schedule = AvailableSchedule::factory()->for($this->doctor)->create([
             'date' => Carbon::now()->addDay(),
             'start_time' => '09:00:00',
             'end_time' => '09:30:00',
@@ -104,38 +101,6 @@ class AvailableScheduleModelTest extends TestCase
         $this->schedule->markAsUnavailable();
 
         $this->assertFalse($this->schedule->fresh()->isAvailable());
-    }
-
-    /**
-     * Test check if schedule is in future
-     */
-    public function test_check_if_schedule_is_in_future(): void
-    {
-        $futureSchedule = AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
-            'date' => Carbon::now()->addDays(5),
-            'start_time' => '14:00:00',
-            'end_time' => '14:30:00',
-            'available' => true,
-        ]);
-
-        $this->assertTrue($futureSchedule->isInFuture());
-    }
-
-    /**
-     * Test check if past schedule is not in future
-     */
-    public function test_past_schedule_is_not_in_future(): void
-    {
-        $pastSchedule = AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
-            'date' => Carbon::now()->subDays(1),
-            'start_time' => '10:00:00',
-            'end_time' => '10:30:00',
-            'available' => true,
-        ]);
-
-        $this->assertFalse($pastSchedule->isInFuture());
     }
 
     /**

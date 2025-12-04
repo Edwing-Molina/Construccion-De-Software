@@ -26,13 +26,13 @@ class DayOfWeekEnumTest extends TestCase
      */
     public function test_day_of_week_enum_values(): void
     {
-        $this->assertEquals('monday', DayOfWeek::MONDAY->value);
-        $this->assertEquals('tuesday', DayOfWeek::TUESDAY->value);
-        $this->assertEquals('wednesday', DayOfWeek::WEDNESDAY->value);
-        $this->assertEquals('thursday', DayOfWeek::THURSDAY->value);
-        $this->assertEquals('friday', DayOfWeek::FRIDAY->value);
-        $this->assertEquals('saturday', DayOfWeek::SATURDAY->value);
-        $this->assertEquals('sunday', DayOfWeek::SUNDAY->value);
+        $this->assertEquals('Monday', DayOfWeek::MONDAY->value);
+        $this->assertEquals('Tuesday', DayOfWeek::TUESDAY->value);
+        $this->assertEquals('Wednesday', DayOfWeek::WEDNESDAY->value);
+        $this->assertEquals('Thursday', DayOfWeek::THURSDAY->value);
+        $this->assertEquals('Friday', DayOfWeek::FRIDAY->value);
+        $this->assertEquals('Saturday', DayOfWeek::SATURDAY->value);
+        $this->assertEquals('Sunday', DayOfWeek::SUNDAY->value);
     }
 
     /**

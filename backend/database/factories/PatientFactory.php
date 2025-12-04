@@ -16,7 +16,7 @@ final class PatientFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'birth_date' => $this->faker->dateTimeBetween('-80 years', '-18 years'),
+            'birth' => $this->faker->dateTimeBetween('-80 years', '-18 years'),
             'blood_type' => $this->faker->randomElement(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
             'emergency_contact_name' => $this->faker->name(),
             'emergency_contact_phone' => $this->faker->phoneNumber(),

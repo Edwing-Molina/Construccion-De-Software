@@ -4,10 +4,13 @@ namespace Tests\Unit\Models;
 
 use App\Models\Patient;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PatientModelTest extends TestCase
 {
+    use RefreshDatabase;
+
     private User $patientUser;
     private Patient $patient;
 
@@ -15,20 +18,15 @@ class PatientModelTest extends TestCase
     {
         parent::setUp();
 
-        $this->patientUser = User::create([
-            'name' => 'Carlos Mendez',
-            'email' => 'carlos.mendez@example.com',
-            'password' => 'password123',
-        ]);
-
-        $this->patient = Patient::create([
-            'user_id' => $this->patientUser->id,
+        $this->patientUser = User::factory()->withPatient([
             'birth' => '1985-06-15',
             'blood_type' => 'O+',
             'emergency_contact_name' => 'María Mendez',
             'emergency_contact_phone' => '+52-555-0123',
             'nss_number' => 'NSS123456789',
-        ]);
+        ])->create();
+
+        $this->patient = $this->patientUser->patient;
     }
 
     /**
@@ -46,7 +44,7 @@ class PatientModelTest extends TestCase
     public function test_patient_can_be_created_with_all_fields(): void
     {
         $this->assertNotNull($this->patient->id);
-        $this->assertEquals('1985-06-15', $this->patient->birth->toDateString());
+        $this->assertEquals('1985-06-15', $this->patient->birth->format('Y-m-d'));
         $this->assertEquals('O+', $this->patient->blood_type);
         $this->assertEquals('María Mendez', $this->patient->emergency_contact_name);
     }
@@ -56,15 +54,8 @@ class PatientModelTest extends TestCase
      */
     public function test_patient_can_be_created_with_minimal_fields(): void
     {
-        $user = User::create([
-            'name' => 'Minimal Patient',
-            'email' => 'minimal@example.com',
-            'password' => 'password123',
-        ]);
-
-        $patient = Patient::create([
-            'user_id' => $user->id,
-        ]);
+        $user = User::factory()->withPatient()->create();
+        $patient = $user->patient;
 
         $this->assertNotNull($patient->id);
         $this->assertEquals($user->id, $patient->user_id);
@@ -88,16 +79,8 @@ class PatientModelTest extends TestCase
         $bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
         foreach ($bloodTypes as $bloodType) {
-            $user = User::create([
-                'name' => "Patient with $bloodType",
-                'email' => "patient.{$bloodType}@example.com",
-                'password' => 'password123',
-            ]);
-
-            $patient = Patient::create([
-                'user_id' => $user->id,
-                'blood_type' => $bloodType,
-            ]);
+            $user = User::factory()->withPatient(['blood_type' => $bloodType])->create();
+            $patient = $user->patient;
 
             $this->assertEquals($bloodType, $patient->blood_type);
         }

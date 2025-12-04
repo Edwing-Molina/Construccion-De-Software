@@ -43,9 +43,7 @@ class PatientAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+
     public function store(Request $request)
     {
         $request->validate([
@@ -68,7 +66,7 @@ class PatientAppointmentController extends Controller
 
         $patientUser = Auth::user();
 
-        // Obtener el patient_id desde la tabla patients usando user_id
+        
         $patient = Patient::where('user_id', $patientUser->id)->first();
         if (!$patient) {
             return response()->json(['message' => 'Paciente no encontrado.'], 404);
@@ -81,7 +79,7 @@ class PatientAppointmentController extends Controller
 
         $appointment->save();
 
-        // Cambiar el estado del horario disponible a 'false'
+        
         $availableSchedule->update(['available' => false]);
 
         return response()->json([
@@ -89,15 +87,6 @@ class PatientAppointmentController extends Controller
             'appointment' => $appointment
         ], 201);
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Patient $patient)
-    {
-        //
-    }
-
 
 public function update(Request $request, $appointment_id)
     {

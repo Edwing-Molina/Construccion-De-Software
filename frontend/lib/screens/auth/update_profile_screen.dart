@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../services/services.dart';
 import '../../models/models.dart';
@@ -10,6 +9,7 @@ import '../../widgets/common/gradient_background.dart';
 import '../../widgets/common/logo_section.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
+import 'widgets/update_profile_widgets/index.dart';
 
 /// Screen to edit the current user's profile.
 class ScreenEditarPerfil extends StatefulWidget {
@@ -254,92 +254,6 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
     }
   }
 
-  Widget _buildSpecialtySelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.lightGray,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: <Widget>[
-          if (_selectedSpecialtyIds.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    _selectedSpecialtyIds.map<Widget>((specialtyId) {
-                      final specialty = _allSpecialties.firstWhere(
-                        (s) => s.id == specialtyId,
-                        orElse:
-                            () => Specialty(id: specialtyId, name: 'Unknown'),
-                      );
-                      return Chip(
-                        label: Text(specialty.name),
-                        deleteIcon: const Icon(Icons.close, size: 18),
-                        onDeleted: () {
-                          setState(
-                            () => _selectedSpecialtyIds.remove(specialtyId),
-                          );
-                        },
-                        backgroundColor: AppColors.uadyBlue.withOpacity(0.1),
-                        deleteIconColor: AppColors.uadyBlue,
-                        labelStyle: const TextStyle(color: AppColors.uadyBlue),
-                      );
-                    }).toList(),
-              ),
-            ),
-          ExpansionTile(
-            title: Text(
-              _selectedSpecialtyIds.isEmpty
-                  ? 'Seleccionar especialidades'
-                  : 'Agregar más especialidades',
-              style: TextStyle(
-                color:
-                    _selectedSpecialtyIds.isEmpty
-                        ? Colors.grey[600]
-                        : AppColors.uadyBlue,
-              ),
-            ),
-            children: <Widget>[
-              Container(
-                constraints: const BoxConstraints(maxHeight: 200),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _allSpecialties.length,
-                  itemBuilder: (context, index) {
-                    final specialty = _allSpecialties[index];
-                    final isSelected = _selectedSpecialtyIds.contains(
-                      specialty.id,
-                    );
-
-                    return CheckboxListTile(
-                      title: Text(specialty.name),
-                      value: isSelected,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            if (!_selectedSpecialtyIds.contains(specialty.id)) {
-                              _selectedSpecialtyIds.add(specialty.id);
-                            }
-                          } else {
-                            _selectedSpecialtyIds.remove(specialty.id);
-                          }
-                        });
-                      },
-                      activeColor: AppColors.uadyBlue,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   void _setLoading(bool value) {
     if (!mounted) return;
     setState(() => _isLoading = value);
@@ -382,191 +296,82 @@ class _ScreenEditarPerfilState extends State<ScreenEditarPerfil> {
   }
 
   Widget _buildFormContainer() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text(
-              'Editar Perfil',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.uadyBlue,
-              ),
-            ),
-            const SizedBox(height: 20),
-            CustomTextField(
-              hintText: 'Nombre',
-              icon: Icons.person_outline,
-              controller: _nameController,
-              validator:
-                  (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-            ),
-            const SizedBox(height: 20),
-            CustomTextField(
-              hintText: 'Correo Electrónico',
-              icon: Icons.email_outlined,
-              controller: _emailController,
-              readOnly: true,
-            ),
-            const SizedBox(height: 20),
-            CustomTextField(
-              hintText: 'Teléfono',
-              icon: Icons.phone_outlined,
-              controller: _phoneController,
-              readOnly: true,
-            ),
-            if (_usuario?.doctor != null) ...<Widget>[
-              const SizedBox(height: 20),
-              CustomTextField(
-                hintText: 'Descripción',
-                icon: Icons.info_outline,
-                controller: _descriptionController,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Especialidades',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              _buildSpecialtySelector(),
-              const SizedBox(height: 20),
-              const Text(
-                'Clínica',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedClinicId,
-                items:
-                    _clinics
-                        .map(
-                          (c) => DropdownMenuItem<String>(
-                            value: c.id.toString(),
-                            child: Text(c.name),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (v) => setState(() => _selectedClinicId = v),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: AppColors.lightGray,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                hintText: 'Número de Consultorio',
-                icon: Icons.door_front_door_outlined,
-                controller: _officeNumberController,
-                validator:
-                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-              ),
-            ],
-            if (_usuario?.patient != null) ...<Widget>[
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: _selectedGender,
-                items:
-                    _genders
-                        .map(
-                          (g) => DropdownMenuItem<String>(
-                            value: g,
-                            child: Text(g),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (v) => setState(() => _selectedGender = v),
-                decoration: const InputDecoration(
-                  labelText: 'Género',
-                  filled: true,
-                  fillColor: AppColors.lightGray,
-                ),
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: _selectedBloodType,
-                items:
-                    _bloodTypes
-                        .map(
-                          (b) => DropdownMenuItem<String>(
-                            value: b,
-                            child: Text(b),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (v) => setState(() => _selectedBloodType = v),
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de Sangre',
-                  filled: true,
-                  fillColor: AppColors.lightGray,
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _pickBirthDate,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Fecha de nacimiento',
-                    filled: true,
-                    fillColor: AppColors.lightGray,
-                  ),
-                  child: Text(
-                    _selectedBirthDate != null
-                        ? DateFormat('dd/MM/yyyy').format(_selectedBirthDate!)
-                        : 'Selecciona una fecha',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                hintText: 'Contacto de Emergencia',
-                icon: Icons.contact_phone,
-                controller: _emergencyNameController,
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                hintText: 'Teléfono de Emergencia',
-                icon: Icons.phone_callback,
-                controller: _emergencyPhoneController,
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                hintText: 'Número de Seguro Social',
-                icon: Icons.health_and_safety,
-                controller: _nssController,
-              ),
-            ],
-            const SizedBox(height: 30),
-            CustomButton(
-              text: 'Guardar Cambios',
-              onPressed: _updateProfile,
-              isLoading: _isLoading,
-            ),
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: () => context.go('/perfil'),
-              icon: const Icon(Icons.arrow_back, color: AppColors.uadyBlue),
-              label: const Text(
-                'Regresar al Perfil',
-                style: TextStyle(color: AppColors.uadyBlue),
-              ),
-            ),
-          ],
+    return UpdateProfileFormContainerWidget(
+      formKey: _formKey,
+      children: <Widget>[
+        const Text(
+          'Editar Perfil',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.uadyBlue,
+          ),
         ),
-      ),
+        const SizedBox(height: 20),
+        CustomTextField(
+          hintText: 'Nombre',
+          icon: Icons.person_outline,
+          controller: _nameController,
+          validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+        ),
+        const SizedBox(height: 20),
+        CustomTextField(
+          hintText: 'Correo Electrónico',
+          icon: Icons.email_outlined,
+          controller: _emailController,
+          readOnly: true,
+        ),
+        const SizedBox(height: 20),
+        CustomTextField(
+          hintText: 'Teléfono',
+          icon: Icons.phone_outlined,
+          controller: _phoneController,
+          readOnly: true,
+        ),
+        if (_usuario?.doctor != null)
+          DoctorProfileSectionWidget(
+            descriptionController: _descriptionController,
+            selectedSpecialtyIds: _selectedSpecialtyIds,
+            allSpecialties: _allSpecialties,
+            onSpecialtyAdded:
+                (id) => setState(() => _selectedSpecialtyIds.add(id)),
+            onSpecialtyRemoved:
+                (id) => setState(() => _selectedSpecialtyIds.remove(id)),
+            selectedClinicId: _selectedClinicId,
+            onClinicChanged: (v) => setState(() => _selectedClinicId = v),
+            clinics: _clinics,
+            officeNumberController: _officeNumberController,
+          ),
+        if (_usuario?.patient != null)
+          PatientProfileSectionWidget(
+            selectedGender: _selectedGender,
+            onGenderChanged: (v) => setState(() => _selectedGender = v),
+            genders: _genders,
+            selectedBloodType: _selectedBloodType,
+            onBloodTypeChanged: (v) => setState(() => _selectedBloodType = v),
+            bloodTypes: _bloodTypes,
+            selectedBirthDate: _selectedBirthDate,
+            onBirthDateTap: _pickBirthDate,
+            emergencyNameController: _emergencyNameController,
+            emergencyPhoneController: _emergencyPhoneController,
+            nssController: _nssController,
+          ),
+        const SizedBox(height: 30),
+        CustomButton(
+          text: 'Guardar Cambios',
+          onPressed: _updateProfile,
+          isLoading: _isLoading,
+        ),
+        const SizedBox(height: 10),
+        TextButton.icon(
+          onPressed: () => context.go('/perfil'),
+          icon: const Icon(Icons.arrow_back, color: AppColors.uadyBlue),
+          label: const Text(
+            'Regresar al Perfil',
+            style: TextStyle(color: AppColors.uadyBlue),
+          ),
+        ),
+      ],
     );
   }
 }

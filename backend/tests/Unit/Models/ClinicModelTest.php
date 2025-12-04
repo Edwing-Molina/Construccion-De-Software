@@ -3,40 +3,32 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Clinic;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ClinicModelTest extends TestCase
 {
-    /**
-     * Test clinic can be created
-     */
+    use RefreshDatabase;
+
     public function test_clinic_can_be_created(): void
     {
-        $clinic = Clinic::create([
-            'name' => 'Hospital Central',
-        ]);
+        $clinic = Clinic::factory()->create();
 
         $this->assertNotNull($clinic->id);
-        $this->assertEquals('Hospital Central', $clinic->name);
+        $this->assertNotNull($clinic->name);
     }
 
-    /**
-     * Test clinic can be updated
-     */
     public function test_clinic_can_be_updated(): void
     {
-        $clinic = Clinic::create(['name' => 'Original Name']);
+        $clinic = Clinic::factory()->create();
         $clinic->update(['name' => 'Updated Name']);
 
         $this->assertEquals('Updated Name', $clinic->fresh()->name);
     }
 
-    /**
-     * Test clinic can be deleted
-     */
     public function test_clinic_can_be_deleted(): void
     {
-        $clinic = Clinic::create(['name' => 'Clinic To Delete']);
+        $clinic = Clinic::factory()->create();
         $clinicId = $clinic->id;
 
         $clinic->delete();
@@ -44,14 +36,10 @@ class ClinicModelTest extends TestCase
         $this->assertNull(Clinic::find($clinicId));
     }
 
-    /**
-     * Test clinic belongs to many doctors
-     */
     public function test_clinic_belongs_to_many_doctors(): void
     {
-        $clinic = Clinic::create(['name' => 'Multi Doctor Clinic']);
+        $clinic = Clinic::factory()->create();
 
-        // Test that relationship exists
         $this->assertNotNull($clinic->doctors());
     }
 }

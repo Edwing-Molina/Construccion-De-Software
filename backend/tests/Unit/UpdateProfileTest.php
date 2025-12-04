@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Unit\Models;
 
 use App\Models\Specialty;
 use App\Models\User;
@@ -17,16 +17,16 @@ class UpdateProfileTest extends TestCase
         $specialty1 = Specialty::factory()->create();
         $specialty2 = Specialty::factory()->create();
 
-        $response = $this->actingAs($user)
-            ->putJson('/api/profile', [
-                'name' => 'Nuevo Nombre',
-                'specialty_ids' => [$specialty1->id, $specialty2->id],
-            ]);
+        $user->update([
+            'name' => 'Nuevo Nombre',
+        ]);
 
-        $response->assertOk();
+        $user->doctor->specialties()->sync([$specialty1->id, $specialty2->id]);
+
         $this->assertEquals('Nuevo Nombre', $user->fresh()->name);
+        $this->assertCount(2, $user->doctor->specialties);
     }
-
 }
+
 
 

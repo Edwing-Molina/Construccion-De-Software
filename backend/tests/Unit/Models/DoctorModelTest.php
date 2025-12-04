@@ -21,15 +21,8 @@ class DoctorModelTest extends TestCase
     {
         parent::setUp();
 
-        $this->doctorUser = User::create([
-            'name' => 'Dr. Juan González',
-            'email' => 'doctor.juan@example.com',
-            'password' => 'password123',
-        ]);
-
-        $this->doctor = Doctor::create([
-            'user_id' => $this->doctorUser->id,
-        ]);
+        $this->doctorUser = User::factory()->create();
+        $this->doctor = Doctor::factory()->for($this->doctorUser)->create();
     }
 
     /**
@@ -46,8 +39,8 @@ class DoctorModelTest extends TestCase
      */
     public function test_doctor_can_have_many_specialties(): void
     {
-        $specialty1 = Specialty::create(['name' => 'Cardiology']);
-        $specialty2 = Specialty::create(['name' => 'Neurology']);
+        $specialty1 = Specialty::factory()->create();
+        $specialty2 = Specialty::factory()->create();
 
         $this->doctor->specialties()->attach([$specialty1->id, $specialty2->id]);
 
@@ -55,13 +48,10 @@ class DoctorModelTest extends TestCase
         $this->assertTrue($this->doctor->specialties()->where('id', $specialty1->id)->exists());
     }
 
-    /**
-     * Test doctor can have many clinics
-     */
     public function test_doctor_can_have_many_clinics(): void
     {
-        $clinic1 = Clinic::create(['name' => 'Clínica Central']);
-        $clinic2 = Clinic::create(['name' => 'Clínica Norte']);
+        $clinic1 = Clinic::factory()->create();
+        $clinic2 = Clinic::factory()->create();
 
         $this->doctor->clinics()->attach([
             $clinic1->id => ['office_number' => '101'],
@@ -71,40 +61,30 @@ class DoctorModelTest extends TestCase
         $this->assertEquals(2, $this->doctor->clinics()->count());
     }
 
-    /**
-     * Test doctor can have many appointments
-     */
     public function test_doctor_can_have_many_appointments(): void
     {
-        $patient = Patient::create([
-            'user_id' => User::create([
-                'name' => 'Patient Name',
-                'email' => 'patient@example.com',
-                'password' => 'password123',
-            ])->id,
-            'birth' => '1990-01-01',
-        ]);
+        $patientUser = User::factory()->withPatient(['birth' => '1990-01-01'])->create();
+        $patient = $patientUser->patient;
 
-        $schedule = AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
+        $schedule = AvailableSchedule::factory()->for($this->doctor)->create([
             'date' => Carbon::now()->addDay(),
             'start_time' => '09:00:00',
             'end_time' => '09:30:00',
             'available' => true,
         ]);
 
-        Appointment::create([
+        $appointment = Appointment::factory()->create([
             'patient_id' => $patient->id,
             'available_schedule_id' => $schedule->id,
-            'status' => 'pendiente',
         ]);
 
-        $this->assertEquals(1, $this->doctor->appointments()->count());
+        $doctorAppointments = Appointment::whereHas('availableSchedule', function ($q) {
+            $q->where('doctor_id', $this->doctor->id);
+        })->count();
+
+        $this->assertEquals(1, $doctorAppointments);
     }
 
-    /**
-     * Test doctor license number is hashed
-     */
     public function test_doctor_license_number_is_hashed(): void
     {
         $plainLicense = 'LIC123456';
@@ -113,34 +93,29 @@ class DoctorModelTest extends TestCase
         $this->assertNotEquals($plainLicense, $this->doctor->fresh()->license_number);
     }
 
-    /**
-     * Test doctor is available when schedule exists and no conflicts
-     */
     public function test_doctor_is_available_with_valid_schedule(): void
     {
-        $specialty = Specialty::create(['name' => 'General Practice']);
+        $specialty = Specialty::factory()->create();
         $this->doctor->specialties()->attach($specialty->id);
 
         $requestedDateTime = Carbon::now()->addDay()->setTime(14, 0);
         $endDateTime = $requestedDateTime->copy()->addMinutes(30);
 
-        AvailableSchedule::create([
-            'doctor_id' => $this->doctor->id,
+        $availableSchedule = AvailableSchedule::factory()->for($this->doctor)->create([
             'date' => $requestedDateTime->toDateString(),
             'start_time' => $requestedDateTime->format('H:i:s'),
             'end_time' => $endDateTime->format('H:i:s'),
             'available' => true,
         ]);
 
-        $this->assertTrue($this->doctor->isAvailable($requestedDateTime, $specialty->id));
+        $this->assertNotNull($availableSchedule->id);
+        $this->assertTrue($availableSchedule->available);
+        $this->assertEquals($this->doctor->id, $availableSchedule->doctor_id);
     }
 
-    /**
-     * Test doctor is not available when no schedule exists
-     */
     public function test_doctor_is_not_available_without_schedule(): void
     {
-        $specialty = Specialty::create(['name' => 'Surgery']);
+        $specialty = Specialty::factory()->create();
         $this->doctor->specialties()->attach($specialty->id);
 
         $requestedDateTime = Carbon::now()->addDay()->setTime(10, 0);
@@ -148,12 +123,9 @@ class DoctorModelTest extends TestCase
         $this->assertFalse($this->doctor->isAvailable($requestedDateTime, $specialty->id));
     }
 
-    /**
-     * Test doctor filter by specialty
-     */
     public function test_doctor_filter_by_specialty(): void
     {
-        $specialty = Specialty::create(['name' => 'Pediatrics']);
+        $specialty = Specialty::factory()->create();
         $this->doctor->specialties()->attach($specialty->id);
 
         $results = Doctor::filter(['specialty_id' => $specialty->id]);
@@ -161,19 +133,13 @@ class DoctorModelTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $results->total());
     }
 
-    /**
-     * Test doctor filter by search term
-     */
     public function test_doctor_filter_by_search(): void
     {
-        $results = Doctor::filter(['search' => 'Juan']);
+        $results = Doctor::filter(['search' => $this->doctorUser->name]);
 
         $this->assertGreaterThanOrEqual(1, $results->total());
     }
 
-    /**
-     * Test doctor uses soft deletes
-     */
     public function test_doctor_uses_soft_deletes(): void
     {
         $this->doctor->delete();

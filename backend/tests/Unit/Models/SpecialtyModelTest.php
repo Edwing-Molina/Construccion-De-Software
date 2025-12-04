@@ -5,48 +5,37 @@ namespace Tests\Unit\Models;
 use App\Models\Specialty;
 use App\Models\Doctor;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SpecialtyModelTest extends TestCase
 {
-    /**
-     * Test specialty can be created with name
-     */
+    use RefreshDatabase;
+
     public function test_specialty_can_be_created_with_name(): void
     {
-        $specialty = Specialty::create(['name' => 'Cardiology']);
+        $specialty = Specialty::factory()->create();
 
         $this->assertNotNull($specialty->id);
-        $this->assertEquals('Cardiology', $specialty->name);
+        $this->assertNotNull($specialty->name);
     }
 
-    /**
-     * Test specialty belongs to many doctors
-     */
     public function test_specialty_belongs_to_many_doctors(): void
     {
-        $specialty = Specialty::create(['name' => 'Neurology']);
+        $specialty = Specialty::factory()->create();
+        $user = User::factory()->withDoctor()->create();
+        $doctor = $user->doctor;
 
-        $user = User::create([
-            'name' => 'Dr. Neurologist',
-            'email' => 'neuro@example.com',
-            'password' => 'password123',
-        ]);
-
-        $doctor = Doctor::create(['user_id' => $user->id]);
-        $specialty->doctors()->attach($doctor->id);
+        $doctor->specialties()->attach($specialty->id);
 
         $this->assertTrue($specialty->doctors()->where('id', $doctor->id)->exists());
     }
 
-    /**
-     * Test specialty filter by name
-     */
     public function test_specialty_scope_filter_by_name(): void
     {
-        Specialty::create(['name' => 'Cardiology']);
-        Specialty::create(['name' => 'Neurology']);
-        Specialty::create(['name' => 'Pediatrics']);
+        Specialty::factory()->create(['name' => 'Cardiology']);
+        Specialty::factory()->create(['name' => 'Neurology']);
+        Specialty::factory()->create(['name' => 'Pediatrics']);
 
         $results = Specialty::filterByName('Cardio')->get();
 
@@ -54,27 +43,21 @@ class SpecialtyModelTest extends TestCase
         $this->assertEquals('Cardiology', $results->first()->name);
     }
 
-    /**
-     * Test specialty filter by name with empty string
-     */
     public function test_specialty_scope_filter_by_name_with_empty_string(): void
     {
-        Specialty::create(['name' => 'Surgery']);
-        Specialty::create(['name' => 'Oncology']);
+        Specialty::factory()->create(['name' => 'Surgery']);
+        Specialty::factory()->create(['name' => 'Oncology']);
 
         $results = Specialty::filterByName('')->get();
 
         $this->assertGreaterThanOrEqual(2, $results->count());
     }
 
-    /**
-     * Test specialty ordered by name
-     */
     public function test_specialty_scope_ordered_by_name(): void
     {
-        Specialty::create(['name' => 'Cardiology']);
-        Specialty::create(['name' => 'Anesthesiology']);
-        Specialty::create(['name' => 'Dermatology']);
+        Specialty::factory()->create(['name' => 'Cardiology']);
+        Specialty::factory()->create(['name' => 'Anesthesiology']);
+        Specialty::factory()->create(['name' => 'Dermatology']);
 
         $results = Specialty::orderedByName()->get();
 
@@ -82,43 +65,29 @@ class SpecialtyModelTest extends TestCase
         $this->assertEquals('Dermatology', $results->last()->name);
     }
 
-    /**
-     * Test specialty does not have timestamps
-     */
     public function test_specialty_does_not_have_timestamps(): void
     {
-        $specialty = Specialty::create(['name' => 'Urology']);
+        $specialty = Specialty::factory()->create();
 
         $this->assertNull($specialty->created_at);
         $this->assertNull($specialty->updated_at);
     }
 
-    /**
-     * Test specialty can be updated
-     */
     public function test_specialty_can_be_updated(): void
     {
-        $specialty = Specialty::create(['name' => 'Original']);
+        $specialty = Specialty::factory()->create(['name' => 'Original']);
         $specialty->update(['name' => 'Updated']);
 
         $this->assertEquals('Updated', $specialty->fresh()->name);
     }
 
-    /**
-     * Test multiple specialties can have the same doctor
-     */
     public function test_multiple_specialties_for_same_doctor(): void
     {
-        $user = User::create([
-            'name' => 'Dr. Multi Specialist',
-            'email' => 'multi@example.com',
-            'password' => 'password123',
-        ]);
+        $user = User::factory()->withDoctor()->create();
+        $doctor = $user->doctor;
 
-        $doctor = Doctor::create(['user_id' => $user->id]);
-
-        $specialty1 = Specialty::create(['name' => 'Internal Medicine']);
-        $specialty2 = Specialty::create(['name' => 'Infectious Disease']);
+        $specialty1 = Specialty::factory()->create(['name' => 'Internal Medicine']);
+        $specialty2 = Specialty::factory()->create(['name' => 'Infectious Disease']);
 
         $doctor->specialties()->attach([$specialty1->id, $specialty2->id]);
 

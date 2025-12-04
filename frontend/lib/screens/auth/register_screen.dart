@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../services/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../widgets/widgets.dart';
+import 'widgets/index.dart';
 
 class ScreenRegistro extends StatefulWidget {
   const ScreenRegistro({super.key});
@@ -150,24 +151,7 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
 
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 20 : 40,
-        vertical: 5,
-      ),
-      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return RegisterFormContainerWidget(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -202,239 +186,41 @@ class _ScreenRegistroState extends State<ScreenRegistro> {
       key: _formKey,
       child: Column(
         children: [
-          _buildRoleSelector(),
+          RoleSelectorWidget(
+            selectedRole: _selectedRole,
+            onRoleChanged: (role) => setState(() => _selectedRole = role),
+          ),
           SizedBox(height: fieldSpacing),
-          _buildNameField(),
+          RegisterFormFields.nameField(_nameController),
           SizedBox(height: fieldSpacing),
-          _buildEmailField(),
+          RegisterFormFields.emailField(_emailController),
           SizedBox(height: fieldSpacing),
-          _buildPhoneField(),
+          RegisterFormFields.phoneField(_phoneController),
           SizedBox(height: fieldSpacing),
           if (_selectedRole == 'doctor') ...[
-            _buildCedulaField(),
+            RegisterFormFields.cedulaField(_cedulaController),
             SizedBox(height: fieldSpacing),
-            _buildClinicaField(),
+            RegisterFormFields.clinicaField(_clinicaController),
             SizedBox(height: fieldSpacing),
           ],
-          _buildPasswordField(),
+          RegisterFormFields.passwordField(
+            _passwordController,
+            _obscurePassword,
+            (value) => setState(() => _obscurePassword = value),
+          ),
           SizedBox(height: fieldSpacing),
-          _buildConfirmPasswordField(),
+          RegisterFormFields.confirmPasswordField(
+            _confirmPasswordController,
+            _passwordController,
+            _obscureConfirmPassword,
+            (value) => setState(() => _obscureConfirmPassword = value),
+          ),
           SizedBox(height: isSmallScreen ? 12 : 16),
           _buildRegisterButton(),
           SizedBox(height: isSmallScreen ? 10 : 12),
           _buildLoginLink(),
         ],
       ),
-    );
-  }
-
-  Widget _buildRoleSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Registrarse como:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.darkGray,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildRoleButton(
-                label: 'Paciente',
-                value: 'patient',
-                isSelected: _selectedRole == 'patient',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildRoleButton(
-                label: 'Doctor',
-                value: 'doctor',
-                isSelected: _selectedRole == 'doctor',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleButton({
-    required String label,
-    required String value,
-    required bool isSelected,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedRole = value;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.uadyBlue : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? AppColors.uadyBlue : Colors.grey.shade300,
-            width: 2,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.darkGray,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNameField() {
-    return CustomTextField(
-      controller: _nameController,
-      hintText: 'Ingresa tu nombre completo',
-      icon: Icons.person_outline,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa tu nombre completo';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildEmailField() {
-    return CustomTextField(
-      controller: _emailController,
-      hintText: 'ejemplo@correo.com',
-      icon: Icons.email_outlined,
-      keyboardType: TextInputType.emailAddress,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa tu correo electrónico';
-        }
-        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-          return 'Por favor ingresa un correo válido';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return CustomTextField(
-      controller: _phoneController,
-      hintText: 'Ingresa tu número de teléfono',
-      icon: Icons.phone_outlined,
-      keyboardType: TextInputType.phone,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa tu número de teléfono';
-        }
-        if (!RegExp(r'^\+?[0-9]{10,15}$').hasMatch(value)) {
-          return 'Por favor ingresa un número válido';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildCedulaField() {
-    return CustomTextField(
-      controller: _cedulaController,
-      hintText: 'Cédula profesional (ej: a123456)',
-      icon: Icons.card_giftcard_outlined,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa tu cédula profesional';
-        }
-        if (!value.toLowerCase().startsWith('a')) {
-          return 'La cédula debe comenzar con la letra "a"';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildClinicaField() {
-    return CustomTextField(
-      controller: _clinicaController,
-      hintText: 'Nombre de la clínica',
-      icon: Icons.local_hospital_outlined,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa el nombre de la clínica';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return CustomTextField(
-      controller: _passwordController,
-      hintText: 'Ingresa tu contraseña',
-      icon: Icons.lock_outline,
-      obscureText: _obscurePassword,
-      suffixIcon: IconButton(
-        icon: Icon(
-          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-          color: AppColors.darkGray,
-        ),
-        onPressed: () {
-          setState(() {
-            _obscurePassword = !_obscurePassword;
-          });
-        },
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa tu contraseña';
-        }
-        if (value.length < 6) {
-          return 'La contraseña debe tener al menos 6 caracteres';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildConfirmPasswordField() {
-    return CustomTextField(
-      controller: _confirmPasswordController,
-      hintText: 'Confirma tu contraseña',
-      icon: Icons.lock_outline,
-      obscureText: _obscureConfirmPassword,
-      suffixIcon: IconButton(
-        icon: Icon(
-          _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-          color: AppColors.darkGray,
-        ),
-        onPressed: () {
-          setState(() {
-            _obscureConfirmPassword = !_obscureConfirmPassword;
-          });
-        },
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor confirma tu contraseña';
-        }
-        if (value != _passwordController.text) {
-          return 'Las contraseñas no coinciden';
-        }
-        return null;
-      },
     );
   }
 
