@@ -7,11 +7,9 @@ use App\Models\DoctorWorkPattern;
 use Illuminate\Validation\Rule;
 use App\Enums\DayOfWeek;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Appointment;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\AvailableSchedule;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+
 
 class WorkPatternsController extends Controller
 {
@@ -38,23 +36,12 @@ class WorkPatternsController extends Controller
         ], 200);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         try{
         $request->validate([
             'clinic_id'             => 'required|exists:clinics,id',
-            'day_of_week'           => ['required', Rule::in(\App\Enums\DayOfWeek::toArray())],
+            'day_of_week'           => ['required', Rule::in(DayOfWeek::toArray())],
             'start_time_pattern'    => 'required|date_format:H:i',
             'end_time_pattern'      => 'required|date_format:H:i|after:start_time_pattern',
             'slot_duration_minutes' => 'required|integer|min:1',
@@ -122,7 +109,7 @@ class WorkPatternsController extends Controller
         try {
             $startDate = Carbon::parse($workPattern->start_date_effective)->toDateString();
         } catch (\Exception $e) {
-            Log::error('Error al parsear start_date_effective: ' . $e->getMessage());
+        
             return response()->json(['message' => 'Error al procesar fecha de inicio del patrón.'], 500);
         }
 
@@ -131,31 +118,31 @@ class WorkPatternsController extends Controller
                 ? Carbon::parse($workPattern->end_date_effective)->toDateString()
                 : $startDate;
         } catch (\Exception $e) {
-            Log::error('Error al parsear end_date_effective: ' . $e->getMessage());
+            
             $endDate = $startDate;
         }
 
         $dayOfWeek = $workPattern->day_of_week;
 
-        if ($dayOfWeek instanceof \App\Enums\DayOfWeek) {
+        if ($dayOfWeek instanceof DayOfWeek) {
             $dayOfWeek = $dayOfWeek->value;
         }
 
-        Log::info("Cancelando horarios entre $startDate y $endDate en el día: $dayOfWeek");
+        
 
-        // Cancelar horarios disponibles sin citas activas
+        
         $horariosCancelados = AvailableSchedule::where('doctor_id', $doctor->id)
             ->where('clinic_id', $workPattern->clinic_id)
             ->whereBetween('date', [$startDate, $endDate])
             ->get()
             ->filter(function ($schedule) use ($dayOfWeek) {
-                // Convertir el número del día de la semana (1=Monday, 7=Sunday)
+                
                 $scheduleDayOfWeek = Carbon::parse($schedule->date)->dayOfWeek;
-                // El enum DayOfWeek probablemente usa números 1-7
+                
                 return $scheduleDayOfWeek == $dayOfWeek;
             })
             ->filter(function ($schedule) {
-                // Solo cancelar si no tiene citas activas
+                
                 return !$schedule->appointments()
                     ->whereNotIn('status', ['cancelada'])
                     ->exists();
@@ -165,7 +152,7 @@ class WorkPatternsController extends Controller
             $schedule->update(['available' => false]);
         });
 
-        Log::info("Total de horarios cancelados: " . $horariosCancelados->count());
+    
 
         return response()->json([
             'message' => 'Patrón de trabajo desactivado exitosamente y horarios libres actualizados.',
@@ -173,11 +160,4 @@ class WorkPatternsController extends Controller
         ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
 }

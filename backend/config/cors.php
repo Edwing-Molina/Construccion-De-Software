@@ -23,8 +23,8 @@ return [
         'http://localhost:8000',
         'http://localhost:8080',
         'http://localhost:5000',
-        'http://localhost:5173', // Vite default port
-        'http://localhost:4200',  // Angular default
+        'http://localhost:5173', 
+        'http://localhost:4200',  
         'http://127.0.0.1:3000',
         'http://127.0.0.1:8000',
         'http://127.0.0.1:8080',
@@ -38,13 +38,13 @@ return [
         'http://192.168.1.254',
         'http://192.168.1.233',
         'http://backend.test',
-        // Flutter mobile/web
+        
         'http://localhost',
         'http://127.0.0.1',
     ],
 
     'allowed_origins_patterns' => [
-        '/http:\/\/192\.168\..*/i',  // Allow all 192.168.* origins
+        '/http:\/\/192\.168\..*/i',  
         '/http:\/\/localhost.*/i',
         '/http:\/\/127\.0\.0\.1.*/i',
     ],

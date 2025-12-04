@@ -4,40 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Models\Clinic;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
+    
     public function show(Request $request)
     {
         $user = $request->user();
-        Log::info('Fetching profile for user:', ['user_id' => $user->id]);
-        
-        // Cargar las relaciones necesarias
+
         $user->load('patient', 'doctor.specialties', 'doctor.clinics');
         
         $userData = $user->toArray();
         
-        // Agregar specialties y clinics al nivel raíz si es doctor
+        
         if ($user->doctor) {
             $userData['specialties'] = $user->doctor->specialties()->get()->map(function ($specialty) {
                 return [
@@ -46,7 +27,7 @@ class ProfileController extends Controller
                 ];
             });
             
-            // Agregar clínicas y consultorios del doctor
+            
             $userData['clinics'] = $user->doctor->clinics()->get()->map(function ($clinic) {
                 return [
                     'id' => $clinic->id,
@@ -57,7 +38,7 @@ class ProfileController extends Controller
             });
         }
 
-        Log::info('Profile data being returned:', $userData);
+        
 
         return response()->json([
             'message' => 'Perfil de usuario recuperado exitosamente.',
@@ -72,10 +53,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Debug: Log de los datos recibidos
-        Log::info('Profile update request:', $request->all());
-
-        // Only update name and phone if they are provided and not null
+        
         $updateData = [];
         if ($request->has('name') && $request->input('name') !== null) {
             $updateData['name'] = $request->input('name');
@@ -110,7 +88,7 @@ class ProfileController extends Controller
 
             if ($request->has('specialty_ids')) {
                 $specialtyIds = $request->input('specialty_ids');
-                Log::info('Specialty IDs received:', ['specialty_ids' => $specialtyIds]);
+                
 
                 $validSpecialties = \App\Models\Specialty::whereIn('id', $specialtyIds)->pluck('id')->toArray();
 
@@ -120,11 +98,10 @@ class ProfileController extends Controller
                     ], 422);
                 }
 
-                Log::info('Syncing specialties for doctor:', ['doctor_id' => $user->doctor->id, 'specialty_ids' => $specialtyIds]);
                 $user->doctor->specialties()->sync($specialtyIds);
             }
 
-            // Buscar clínicas tanto en el nivel superior como en doctor
+            
             $clinicsData = $request->input('clinics', $doctorData['clinics'] ?? []);
             
             if (!empty($clinicsData)) {
@@ -132,7 +109,7 @@ class ProfileController extends Controller
 
                 foreach ($clinicsData as $clinicData) {
                     if (isset($clinicData['clinic_id'])) {
-                        $clinic = \App\Models\Clinic::find($clinicData['clinic_id']);
+                        $clinic = Clinic::find($clinicData['clinic_id']);
                         if (!$clinic) {
                             return response()->json([
                                 'message' => 'Clínica con ID ' . $clinicData['clinic_id'] . ' no encontrada.',
@@ -151,11 +128,11 @@ class ProfileController extends Controller
             }
         }
 
-        // Reload user with all relations and format response
+        
         $user->load('patient', 'doctor.specialties', 'doctor.clinics');
         $userData = $user->toArray();
         
-        // Agregar specialties y clinics al nivel raíz si es doctor
+        
         if ($user->doctor) {
             $userData['specialties'] = $user->doctor->specialties()->get()->map(function ($specialty) {
                 return [
@@ -164,7 +141,7 @@ class ProfileController extends Controller
                 ];
             });
             
-            // Agregar clínicas y consultorios del doctor
+            
             $userData['clinics'] = $user->doctor->clinics()->get()->map(function ($clinic) {
                 return [
                     'id' => $clinic->id,
@@ -181,25 +158,15 @@ class ProfileController extends Controller
         ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
 
-    /**
-     * Display the specified resource for other users.
-     */
     public function showOtherUser($id)
     {
-        $user = \App\Models\User::with(['patient', 'doctor.specialties', 'doctor.clinics'])->findOrFail($id);
+        $user = User::with(['patient', 'doctor.specialties', 'doctor.clinics'])->findOrFail($id);
 
         $userData = $user->toArray();
         
         if ($user->doctor) {
-            // Ocultar la cédula profesional (license_number almacenada en description)
+            
             unset($userData['doctor']['license_number']);
             
             $userData['specialties'] = $user->doctor->specialties()->get()->map(function ($specialty) {
@@ -209,7 +176,7 @@ class ProfileController extends Controller
                 ];
             });
             
-            // Agregar clínicas y consultorios del doctor (sin información sensible)
+            
             $userData['clinics'] = $user->doctor->clinics()->get()->map(function ($clinic) {
                 return [
                     'id' => $clinic->id,

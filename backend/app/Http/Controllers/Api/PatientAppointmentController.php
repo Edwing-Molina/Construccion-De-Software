@@ -9,7 +9,7 @@ use App\Models\Patient;
 use Illuminate\Http\Request;
 use App\Models\AvailableSchedule;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+
 use Carbon\Carbon;
 
 class PatientAppointmentController extends Controller
@@ -90,7 +90,7 @@ class PatientAppointmentController extends Controller
 
 public function update(Request $request, $appointment_id)
     {
-        Log::info("UPDATE CALLED with appointment_id: $appointment_id");
+        
         
         $user = $request->user();
 
@@ -115,7 +115,7 @@ public function update(Request $request, $appointment_id)
         $date = $appointment->availableSchedule->date;
         $dateStr = $date instanceof Carbon ? $date->format('Y-m-d') : substr($date, 0, 10);
         $timeStr = substr(trim((string) $appointment->availableSchedule->start_time), 0, 8);
-        Log::info("Cancelling: dateStr=$dateStr, timeStr=$timeStr");
+        
         $appointmentDateTime = Carbon::createFromFormat('Y-m-d H:i:s', "$dateStr $timeStr");
         
         $now = Carbon::now();

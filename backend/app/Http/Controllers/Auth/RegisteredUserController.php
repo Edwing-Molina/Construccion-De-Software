@@ -8,10 +8,9 @@ use App\Models\Clinic;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+
 use Illuminate\Validation\Rules;
 
 class RegisteredUserController extends Controller
@@ -32,7 +31,7 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ];
 
-        // Validaciones adicionales para doctores
+        
         if ($role === 'doctor') {
             $rules['cedula'] = ['required', 'string', 'max:50', 'unique:doctors,description'];
             $rules['clinica'] = ['required', 'string', 'max:255'];
@@ -48,7 +47,7 @@ class RegisteredUserController extends Controller
         ]);
 
         if ($role === 'doctor') {
-            // Crear o buscar clínica
+            
             $clinic = Clinic::firstOrCreate(
                 ['name' => $request->clinica],
                 [
@@ -57,15 +56,9 @@ class RegisteredUserController extends Controller
                 ]
             );
 
-            // Asignar rol de doctor
+            
             $user->assignRole('doctor');
 
-            // Crear perfil de doctor
-            Log::info('Creating doctor profile for user:', [
-                'user_id' => $user->id,
-                'clinic_id' => $clinic->id,
-                'cedula' => $request->cedula
-            ]);
             
             $doctor = $user->doctor()->create([
                 'user_id' => $user->id,
@@ -75,14 +68,13 @@ class RegisteredUserController extends Controller
                 'is_active' => true,
             ]);
 
-            // Asociar clínica al doctor
+            
             $doctor->clinics()->attach($clinic->id);
         } else {
-            // Asignar rol de paciente
+           
             $user->assignRole('patient');
 
             if (!$user->patient) {
-                Log::info('Creating patient profile for user:', ['user_id' => $user->id]);
                 $patient = $user->patient()->create([
                     'user_id' => $user->id,
                     'birth' => null,
@@ -92,9 +84,7 @@ class RegisteredUserController extends Controller
                     'emergency_contact_phone' => null,
                     'nss_number' => null,
                 ]);
-            } else {
-                Log::info('Patient profile already exists for user:', ['user_id' => $user->id]);
-            }
+            } 
         }
 
         event(new Registered($user));

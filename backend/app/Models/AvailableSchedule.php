@@ -76,21 +76,21 @@ final class AvailableSchedule extends Model
         $currentDate = $startDate->copy();
 
         while ($currentDate->lte($endDate)) {
-            // Obtener los patrones de trabajo para este día de la semana
-            $dayName = $currentDate->format('l'); // 'Monday', 'Tuesday', etc.
+            
+            $dayName = $currentDate->format('l'); 
             
             $workPatterns = DoctorWorkPattern::where('doctor_id', $doctorId)
                 ->where('is_active', true)
                 ->get()
                 ->filter(function ($pattern) use ($dayName, $currentDate) {
-                    // Comparar el día de la semana
+                    
                     $patternDay = $pattern->day_of_week->value ?? $pattern->day_of_week;
                     
                     if ($patternDay !== $dayName) {
                         return false;
                     }
 
-                    // Verificar si la fecha está dentro del rango efectivo
+                    
                     if ($pattern->start_date_effective && $currentDate->lt($pattern->start_date_effective)) {
                         return false;
                     }
@@ -103,7 +103,7 @@ final class AvailableSchedule extends Model
                 });
 
             foreach ($workPatterns as $pattern) {
-                // Obtener los tiempos del patrón
+                
                 $startTimeStr = is_string($pattern->start_time_pattern) 
                     ? $pattern->start_time_pattern 
                     : $pattern->start_time_pattern->format('H:i:s');
@@ -112,7 +112,7 @@ final class AvailableSchedule extends Model
                     ? $pattern->end_time_pattern 
                     : $pattern->end_time_pattern->format('H:i:s');
 
-                // Generar slots basados en el patrón
+                
                 $startTime = Carbon::createFromFormat('H:i:s', $startTimeStr);
                 $endTime = Carbon::createFromFormat('H:i:s', $endTimeStr);
                 $slotDuration = $pattern->slot_duration_minutes;

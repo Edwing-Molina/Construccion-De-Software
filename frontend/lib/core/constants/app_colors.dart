@@ -12,7 +12,6 @@ class AppColors {
   static const white = Color(0xFFFFFFFF);
   static const black = Color(0xFF000000);
 
-  // Nuevos colores para el diseño moderno
   static const lightBackground = Color(0xFFF0F2F5);
   static const mediumGray = Color(0xFFCCCCCC);
   static const textColorLight = Color(0xFF555555);
