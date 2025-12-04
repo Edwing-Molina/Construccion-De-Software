@@ -18,9 +18,6 @@ class ProfileService extends BaseService {
       final url = Uri.parse('${BaseService.baseUrl}/me');
       final body = json.encode(profileData);
 
-      // Debug: Log del body enviado
-      print('Profile update body: $body');
-
       final response = await http.put(
         url,
         headers: headersWithAuth(token),
@@ -28,10 +25,6 @@ class ProfileService extends BaseService {
       );
 
       final responseData = json.decode(response.body);
-
-      // Debug: Log de la respuesta
-      print('Profile update response: ${response.statusCode}');
-      print('Profile update response body: ${response.body}');
 
       if (response.statusCode == 200 && responseData['data'] != null) {
         return ApiResponse<User>(
@@ -63,24 +56,15 @@ class ProfileService extends BaseService {
 
       final url = Uri.parse('${BaseService.baseUrl}/me');
 
-      print('[ProfileService] Fetching profile from: $url');
-      print('[ProfileService] Headers: ${headersWithAuth(token)}');
-
       final response = await http.get(url, headers: headersWithAuth(token));
-
-      print('[ProfileService] Response status: ${response.statusCode}');
-      print('[ProfileService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print('[ProfileService] Parsed response: $responseData');
 
         // Extract user data from the response
         final userData = responseData['data'] ?? responseData;
-        print('[ProfileService] User data to parse: $userData');
 
         final user = User.fromJson(userData);
-        print('[ProfileService] Successfully parsed user: ${user.name}');
 
         return ApiResponse<User>(
           success: true,
@@ -88,11 +72,9 @@ class ProfileService extends BaseService {
           message: responseData['message'] ?? 'Perfil obtenido exitosamente',
         );
       } else {
-        print('[ProfileService] Error status: ${response.statusCode}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('[ProfileService] Exception in getProfile: $e');
       throw Exception('Error al obtener perfil: $e');
     }
   }

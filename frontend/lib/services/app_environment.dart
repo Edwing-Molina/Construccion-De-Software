@@ -13,8 +13,6 @@ class AppEnvironment {
   static bool get isWeb => kIsWeb;
 
   static void printDebug(String message) {
-    if (debugNetworking) {
-      print('[DEBUG] $message');
-    }
+    if (debugNetworking) {}
   }
 }

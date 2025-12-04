@@ -30,16 +30,14 @@ class _HistorialMedicoScreenState extends State<HistorialMedicoScreen> {
 
     try {
       final serviceCitas = serviceLocator.serviceCitas;
-      print('Cargando historial médico...'); // Debug
+
       final citas = await serviceCitas.obtenerHistorialMedico();
-      print('Citas recibidas: ${citas.length}'); // Debug
 
       setState(() {
         historialItems = citas;
         isLoading = false;
       });
     } catch (e) {
-      print('Error al cargar historial: $e'); // Debug
       setState(() {
         isLoading = false;
       });

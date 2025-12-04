@@ -21,8 +21,6 @@ class AgendarService extends BaseService {
 
     final response = await http.get(uri, headers: headersWithAuth(token));
     final data = jsonDecode(response.body);
-    print('Respuesta decodificada: $data');
-    print('Tipo de data["data"]: ${data['data'].runtimeType}');
     if (data is Map<String, dynamic> && data.containsKey('data')) {
       return List<AvailableSchedule>.from(
         (data['data'] as List).map((e) => AvailableSchedule.fromJson(e)),
@@ -38,23 +36,13 @@ class AgendarService extends BaseService {
 
     final uri = Uri.parse('${BaseService.baseUrl}/patient-appointments');
 
-    print(
-      '[AgendarService] Creando cita con schedule ID: $availableScheduleId',
-    );
-    print('[AgendarService] URL: $uri');
-    print('[AgendarService] Token: $token');
-
     final body = json.encode({'available_schedule_id': availableScheduleId});
-    print('[AgendarService] Body: $body');
 
     final response = await http.post(
       uri,
       headers: headersWithAuth(token),
       body: body,
     );
-
-    print('[AgendarService] Response status: ${response.statusCode}');
-    print('[AgendarService] Response body: ${response.body}');
 
     return handleResponse(
       response,

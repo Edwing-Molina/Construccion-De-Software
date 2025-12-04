@@ -1,3 +1,7 @@
 {
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
+    "sonarlint.connectedMode.project": {
+        "connectionId": "edwing-molina",
+        "projectKey": "Edwing-Molina_Construccion-De-Software"
+    }
 }

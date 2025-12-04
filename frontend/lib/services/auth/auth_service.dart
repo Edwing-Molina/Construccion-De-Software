@@ -154,8 +154,6 @@ class AuthService extends BaseService {
 
       return user;
     } catch (e) {
-      AppEnvironment.printDebug('Error detallado en registro: $e');
-
       // Manejo específico de errores
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {

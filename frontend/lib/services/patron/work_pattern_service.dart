@@ -56,7 +56,6 @@ class WorkPatternService {
     );
 
     final jsonData = jsonDecode(response.body);
-    print(jsonData);
 
     if (response.statusCode != 201) {
       return ApiResponse(
@@ -101,23 +100,18 @@ class WorkPatternService {
   Future<ApiResponse<DoctorWorkPattern>> desactivarPatron(int id) async {
     try {
       final token = await _authService.getToken();
-      print('Token obtenido para desactivar patrón: $token');
+
       if (token == null) throw Exception('Token no disponible');
 
       final url = Uri.parse('${BaseService.baseUrl}/work-patterns/$id');
-      print('URL para desactivar patrón: $url');
 
       final headers = headersWithAuth(token);
-      print('Headers: $headers');
 
       final response = await http.put(url, headers: headers);
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
 
       final jsonData = jsonDecode(response.body);
 
       if (response.statusCode != 200) {
-        print('Error al desactivar patrón: ${jsonData['message']}');
         return ApiResponse(
           success: false,
           message: jsonData['message'] ?? 'Error al desactivar patrón',
@@ -125,7 +119,6 @@ class WorkPatternService {
       }
 
       final data = DoctorWorkPattern.fromJson(jsonData['data']);
-      print('Patrón desactivado correctamente: $data');
 
       return ApiResponse(
         success: true,
@@ -133,7 +126,6 @@ class WorkPatternService {
         message: jsonData['message'] ?? 'Patrón desactivado correctamente',
       );
     } catch (e) {
-      print('Error inesperado en desactivarPatron: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado al desactivar patrón: $e',
@@ -147,13 +139,11 @@ class WorkPatternService {
   ) async {
     try {
       final token = await _authService.getToken();
-      print('Token obtenido: $token');
       if (token == null) throw Exception('Token no disponible');
 
       final url = Uri.parse(
         '${BaseService.baseUrl}/doctor-available-schedules/generate',
       );
-      print('URL: $url');
 
       final headers = {
         'Content-Type': 'application/json',
@@ -165,32 +155,23 @@ class WorkPatternService {
         'end_date': endDate.toIso8601String().split('T')[0],
       });
 
-      print('Headers: $headers');
-      print('Body: $body');
-
       final response = await http.post(url, headers: headers, body: body);
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
 
       final jsonData = jsonDecode(response.body);
 
       // Accept both 200 and 201 status codes
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('Error al generar horarios: ${jsonData['message']}');
         return ApiResponse(
           success: false,
           message: jsonData['message'] ?? 'Error al generar horarios',
         );
       }
 
-      print('Horarios generados exitosamente.');
       return ApiResponse(
         success: true,
         message: jsonData['message'] ?? 'Horarios generados exitosamente',
       );
     } catch (e) {
-      print('Error inesperado: $e');
       return ApiResponse(
         success: false,
         message: 'Error inesperado al generar horarios: $e',

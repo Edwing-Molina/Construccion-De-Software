@@ -72,9 +72,6 @@ class ServiceCitas extends BaseService {
       body: json.encode({}), // o null si el backend acepta sin body
     );
 
-    print('Status code: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
     return handleResponse(
       response,
       (data) => ApiResponse<void>(
@@ -93,8 +90,6 @@ class ServiceCitas extends BaseService {
       '${BaseService.baseUrl}/patient-appointments/$appointmentId',
     );
 
-    print('[ServiceCitas] Cancelando cita $appointmentId desde: $url');
-
     try {
       final response = await http.put(
         url,
@@ -104,9 +99,6 @@ class ServiceCitas extends BaseService {
         },
         body: json.encode({}),
       );
-
-      print('[ServiceCitas] Status cancelación: ${response.statusCode}');
-      print('[ServiceCitas] Response: ${response.body}');
 
       if (response.statusCode != 200) {
         final errorBody = jsonDecode(response.body);
@@ -122,7 +114,6 @@ class ServiceCitas extends BaseService {
         message: data['message'] ?? 'Cita cancelada exitosamente',
       );
     } catch (e) {
-      print('[ServiceCitas] ERROR en cancelación: $e');
       rethrow;
     }
   }
@@ -134,8 +125,6 @@ class ServiceCitas extends BaseService {
 
     final url = Uri.parse('${BaseService.baseUrl}/patient-appointments');
 
-    print('[ServiceCitas] Solicitando historial desde: $url');
-
     try {
       final response = await http
           .get(url, headers: headersWithAuth(token))
@@ -144,21 +133,16 @@ class ServiceCitas extends BaseService {
             onTimeout: () => throw Exception('Timeout obteniendo historial'),
           );
 
-      print('[ServiceCitas] Status: ${response.statusCode}');
-      print('[ServiceCitas] Content-Type: ${response.headers['content-type']}');
       final bodyPreview =
           response.body.length > 500
               ? response.body.substring(0, 500)
               : response.body;
-      print('[ServiceCitas] Body preview: $bodyPreview');
 
       if (response.statusCode != 200) {
         throw Exception('Error ${response.statusCode}: ${response.body}');
       }
 
       final decodedData = jsonDecode(response.body) as Map<String, dynamic>;
-      print('[ServiceCitas] Decodificado exitosamente');
-      print('[ServiceCitas] Top-level keys: ${decodedData.keys.toList()}');
 
       // El backend envía: { "message": "...", "data": { "data": [...], ...paginate info } }
       final dataWrapper = decodedData['data'];
@@ -166,22 +150,14 @@ class ServiceCitas extends BaseService {
         throw Exception('No existe clave "data" en respuesta');
       }
 
-      print('[ServiceCitas] Tipo de dataWrapper: ${dataWrapper.runtimeType}');
-
       List<dynamic> citasRaw = [];
 
       if (dataWrapper is Map<String, dynamic>) {
         // Es paginación Laravel: { "data": [...], "total": 10, ...}
         citasRaw = (dataWrapper['data'] ?? []) as List<dynamic>;
-        print(
-          '[ServiceCitas] Estructura paginada. Citas raw: ${citasRaw.length}',
-        );
       } else if (dataWrapper is List<dynamic>) {
         // Es un array directo
         citasRaw = dataWrapper;
-        print(
-          '[ServiceCitas] Estructura de array. Citas raw: ${citasRaw.length}',
-        );
       } else {
         throw Exception(
           'dataWrapper tiene tipo inesperado: ${dataWrapper.runtimeType}',
@@ -195,10 +171,7 @@ class ServiceCitas extends BaseService {
           final citaJson = citasRaw[i] as Map<String, dynamic>;
           final appointment = Appointment.fromJson(citaJson);
           appointments.add(appointment);
-          print('[ServiceCitas] Cita $i parseada: id=${appointment.id}');
         } catch (e) {
-          print('[ServiceCitas] Error parseando cita $i: $e');
-          print('[ServiceCitas] JSON raw: ${citasRaw[i]}');
           // No relanzar, continuar con las demás
         }
       }
@@ -207,19 +180,11 @@ class ServiceCitas extends BaseService {
       final completadas =
           appointments.where((apt) {
             final isCompleted = apt.status?.toLowerCase() == 'completado';
-            print(
-              '[ServiceCitas] Cita id=${apt.id} status=${apt.status} - completada=$isCompleted',
-            );
             return isCompleted;
           }).toList();
 
-      print(
-        '[ServiceCitas] Total citas parseadas: ${appointments.length}, completadas: ${completadas.length}',
-      );
       return completadas;
-    } catch (e, stacktrace) {
-      print('[ServiceCitas] EXCEPCION: $e');
-      print('[ServiceCitas] Stack: $stacktrace');
+    } catch (e) {
       rethrow;
     }
   }

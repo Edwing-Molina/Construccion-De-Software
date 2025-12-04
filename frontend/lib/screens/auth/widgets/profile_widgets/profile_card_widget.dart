@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../widgets/common/custom_button.dart';
 import '../../../../models/models.dart';
 import 'detail_row_widget.dart';
